@@ -1,17 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const LocationScreen = () => (
-  <View style={styles.container}>
-    <Text>This is Location Page</Text>
-  </View>
-);
-
-// const ProfileScreen = () => (
-//   <View style={styles.container}>
-//     <Text>This is Profile Page</Text>
-//   </View>
-// );
+export default function LocationScreen() {
+  return (
+    <View style={styles.container}>
+      <Text>Location Page</Text>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -20,5 +16,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-
-export default LocationScreen;

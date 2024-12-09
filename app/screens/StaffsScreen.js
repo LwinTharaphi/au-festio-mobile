@@ -1,11 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const StaffsScreen = () => (
-  <View style={styles.container}>
-    <Text>This is Staff Page</Text>
-  </View>
-);
+export default function StaffsScreen({ route }) {
+  const { eventId } = route.params;
+
+  return (
+    <View style={styles.container}>
+      <Text>Staffs for Event ID: {eventId}</Text>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -14,5 +18,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-
-export default StaffsScreen;
