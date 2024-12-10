@@ -14,6 +14,7 @@ export default function MainTabNavigator() {
         name="Events"
         component={EventStackNavigator}
         options={{
+          headerShown: true,
           tabBarLabel: 'Events',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar" size={size} color={color} /> // Icon for Events
