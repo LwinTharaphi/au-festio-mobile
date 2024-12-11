@@ -18,7 +18,7 @@ export default function EventsScreen({ navigation }) {
         renderItem={({ item }) => (
           <EventCard
             event={item}
-            onPress={() => navigation.navigate('EventDetail', { eventId: item._id })}
+            onPress={() => navigation.navigate('EventDetail', { eventId: item._id, hideTabs: true  })}
           />
         )}
       />

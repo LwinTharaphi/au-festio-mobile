@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Picker } from '@react-native-picker/picker';
 import {
   View,
   Text,
@@ -25,6 +26,7 @@ export default function StaffRolesScreen({ route }) {
     faculty: '',
     role: '', // roleId added to the form data
   });
+  const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
 
   useEffect(() => {
     // Set loading to true before fetching data
@@ -32,8 +34,8 @@ export default function StaffRolesScreen({ route }) {
 
     // Fetch event details and staff roles in parallel
     Promise.all([
-      fetch(`http://10.120.218.69:3000/api/events/${eventId}`),
-      fetch(`http://10.120.218.69:3000/api/events/${eventId}/staffroles`),
+      fetch(`http://10.120.218.140:3000/api/events/${eventId}`),
+      fetch(`http://10.120.218.140:3000/api/events/${eventId}/staffroles`),
     ])
       .then(([eventResponse, staffRolesResponse]) => {
         if (!eventResponse.ok || !staffRolesResponse.ok) {
@@ -73,7 +75,7 @@ export default function StaffRolesScreen({ route }) {
           text: "OK",
           onPress: () => {
             const payload = { ...formData, role: formData.role, event };
-            fetch(`http://10.120.218.69:3000/api/events/${eventId}/staffs`, {
+            fetch(`http://10.120.218.140:3000/api/events/${eventId}/staffs`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
@@ -170,15 +172,28 @@ export default function StaffRolesScreen({ route }) {
               value={formData.phone}
               onChangeText={(text) => setFormData({ ...formData, phone: text })}
             />
-            <TextInput
-              style={styles.input}
-              placeholder="Faculty"
-              value={formData.faculty}
-              onChangeText={(text) => setFormData({ ...formData, faculty: text })}
-            />
-            <View style={styles.modalButtons}>
-              <Button title="Cancel" onPress={() => setModalVisible(false)} />
-              <Button title="Submit" onPress={handleConfirm} />
+            <View style={[styles.pickerContainer, { height: 43 }]}>
+              <Picker
+                selectedValue={formData.faculty}
+                style={[
+                  styles.picker,
+                  { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
+                ]}
+                onValueChange={(value) => setFormData({ ...formData, faculty: value })}
+              >
+                <Picker.Item label="Select Faculty" value="" />
+                {faculties.map((faculty) => (
+                  <Picker.Item key={faculty} label={faculty} value={faculty} />
+                ))}
+              </Picker>
+            </View>
+            <View style={styles.buttonContainer}>
+              <View style={styles.buttonWrapper}>              
+                <Button title="Cancel" onPress={() => setModalVisible(false)} />
+              </View>
+              <View style={styles.buttonWrapper}>
+                <Button title="Confirm" onPress={handleConfirm} />
+              </View>
             </View>
           </View>
         </View>
@@ -238,7 +253,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '80%',
+    width: '90%',
     backgroundColor: '#fff',
     padding: 20,
     borderRadius: 10,
@@ -259,5 +274,22 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    justifyContent: 'center', // Center the picker vertically
+    overflow: 'hidden', // Clip anything exceeding the container bounds
+    marginBottom: 10,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginTop: 10,
+  },
+  buttonWrapper: {
+    width: 120, // Set the width here as per your requirement
+    marginBottom: 10, // Add margin as needed
   },
 });

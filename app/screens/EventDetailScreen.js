@@ -28,7 +28,7 @@ export default function EventDetailScreen({ route }) {
 
   useEffect(() => {
     // Fetch event details
-    fetch(`http://10.120.218.69:3000/api/events/${eventId}`)
+    fetch(`http://10.120.218.140:3000/api/events/${eventId}`)
       .then((response) => response.json())
       .then((data) => {
         setEvent(data);
