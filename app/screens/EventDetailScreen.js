@@ -24,11 +24,13 @@ export default function EventDetailScreen({ route }) {
     faculty: '',
     phone: '',
   });
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [studentId, setStudentId] = useState(null); // State to store student ID
   const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
 
   useEffect(() => {
     // Fetch event details
-    fetch(`http://10.120.218.140:3000/api/events/${eventId}`)
+    fetch(`http://10.120.216.231:3000/api/events/${eventId}`)
       .then((response) => response.json())
       .then((data) => {
         setEvent(data);
@@ -58,22 +60,63 @@ export default function EventDetailScreen({ route }) {
           text: "OK",
           onPress: () => {
             const payload = { ...formData, eventId };
-            fetch(`http://10.120.218.69:3000/api/events/${eventId}/students`, {
+            fetch(`http://10.120.216.231:3000/api/events/${eventId}/students`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
             })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error('Failed to register');
+              }
+              return response.json();
+            })
+            .then((data) => {
+              Alert.alert('Success', 'You have successfully registered!');
+              setModalVisible(false);
+              setFormData({ name: '', email: '', faculty: '', phone: '' });
+              setIsRegistered(true);
+              setStudentId(data._id); // Use the _id from the response
+            })
+              .catch((error) => {
+                console.error('Error registering:', error);
+                Alert.alert('Error', 'An error occurred. Please try again.');
+              });
+          }
+        }
+      ]
+    );
+  };
+
+  const handleCancelRegistration = () => {
+    Alert.alert(
+      "Cancel Registration",
+      "Are you sure you want to cancel your registration?",
+      [
+        {
+          text: "No",
+          onPress: () => console.log("Cancellation Cancelled"),
+          style: "cancel"
+        },
+        {
+          text: "Yes",
+          onPress: () => {
+            fetch(`http://10.120.216.231:3000/api/events/${eventId}/students/${studentId}`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            // .then((response) => response.json())
               .then((response) => {
                 if (response.ok) {
-                  Alert.alert('Success', 'You have successfully registered!');
-                  setModalVisible(false);
-                  setFormData({ name: '', email: '', faculty: '', phone: '' });
+                  Alert.alert('Success', 'Your registration has been cancelled.');
+                  setIsRegistered(false);
+                  setStudentId(null); // Clear the student ID
                 } else {
-                  Alert.alert('Error', 'Failed to register. Please try again.');
+                  Alert.alert('Error', 'Failed to cancel registration. Please try again.');
                 }
               })
               .catch((error) => {
-                console.error('Error registering:', error);
+                console.error('Error cancelling registration:', error);
                 Alert.alert('Error', 'An error occurred. Please try again.');
               });
           }
@@ -103,7 +146,7 @@ export default function EventDetailScreen({ route }) {
     <View style={styles.container}>
       {/* Event Poster */}
       <Image
-        source={{ uri: `http://10.120.218.69:3000/uploads/posters/${event.posterName}` }}
+        source={{ uri: `http://10.120.216.231:3000/uploads/posters/${event.posterName}` }}
         style={styles.poster}
       />
 
@@ -122,8 +165,11 @@ export default function EventDetailScreen({ route }) {
         <Text style={styles.detail}>Is Paid: {event.isPaid ? 'Yes' : 'No'}</Text>
       </View>
 
-      {/* Register Button */}
-      <Button title="Register" onPress={handleRegister} />
+      {/* Register/Cancel Button */}
+      <Button
+          title={isRegistered ? "Cancel Registration" : "Register"}
+          onPress={isRegistered ? handleCancelRegistration : handleRegister}
+        />
 
       {/* Registration Modal */}
       <Modal

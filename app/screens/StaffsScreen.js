@@ -34,8 +34,8 @@ export default function StaffRolesScreen({ route }) {
 
     // Fetch event details and staff roles in parallel
     Promise.all([
-      fetch(`http://10.120.218.140:3000/api/events/${eventId}`),
-      fetch(`http://10.120.218.140:3000/api/events/${eventId}/staffroles`),
+      fetch(`http://10.120.216.231:3000/api/events/${eventId}`),
+      fetch(`http://10.120.216.231:3000/api/events/${eventId}/staffroles`),
     ])
       .then(([eventResponse, staffRolesResponse]) => {
         if (!eventResponse.ok || !staffRolesResponse.ok) {
@@ -75,7 +75,7 @@ export default function StaffRolesScreen({ route }) {
           text: "OK",
           onPress: () => {
             const payload = { ...formData, role: formData.role, event };
-            fetch(`http://10.120.218.140:3000/api/events/${eventId}/staffs`, {
+            fetch(`http://10.120.216.231:3000/api/events/${eventId}/staffs`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
