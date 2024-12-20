@@ -26,6 +26,8 @@ export default function StaffRolesScreen({ route }) {
     faculty: '',
     role: '', // roleId added to the form data
   });
+  const [registeredRole, setRegisteredRole] = useState(null); // State to track registered role
+  const [staffId, setStaffId] = useState(null);
   const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
 
   useEffect(() => {
@@ -34,8 +36,8 @@ export default function StaffRolesScreen({ route }) {
 
     // Fetch event details and staff roles in parallel
     Promise.all([
-      fetch(`http://10.120.216.231:3000/api/events/${eventId}`),
-      fetch(`http://10.120.216.231:3000/api/events/${eventId}/staffroles`),
+      fetch(`http://10.120.216.243:3000/api/events/${eventId}`),
+      fetch(`http://10.120.216.243:3000/api/events/${eventId}/staffroles`),
     ])
       .then(([eventResponse, staffRolesResponse]) => {
         if (!eventResponse.ok || !staffRolesResponse.ok) {
@@ -54,8 +56,17 @@ export default function StaffRolesScreen({ route }) {
       });
   }, [eventId]);
 
+  // const handleRegister = (role) => {
+  //   // Set the roleId in the formData state
+  //   setFormData((prevState) => ({ ...prevState, role }));
+  //   setModalVisible(true);
+  // };
+
   const handleRegister = (role) => {
-    // Set the roleId in the formData state
+    if (registeredRole) {
+      Alert.alert('Sorry', 'You can only register one role.');
+      return;
+    }
     setFormData((prevState) => ({ ...prevState, role }));
     setModalVisible(true);
   };
@@ -75,19 +86,23 @@ export default function StaffRolesScreen({ route }) {
           text: "OK",
           onPress: () => {
             const payload = { ...formData, role: formData.role, event };
-            fetch(`http://10.120.216.231:3000/api/events/${eventId}/staffs`, {
+            fetch(`http://10.120.216.243:3000/api/events/${eventId}/staffs`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
             })
-              .then((response) => {
-                if (response.ok) {
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error('Failed to register');
+              }
+              return response.json();
+            })
+              .then((data) => {
                   Alert.alert('Success', 'You have successfully registered!');
                   setModalVisible(false);
+                  setRegisteredRole(formData.role);
+                  setStaffId(data._id);
                   setFormData({ id: '', name: '', email: '', faculty: '', phone: '', role: '' }); // Reset form data
-                } else {
-                  Alert.alert('Error', 'Failed to register. Please try again.');
-                }
               })
               .catch((error) => {
                 console.error('Error registering:', error);
@@ -98,6 +113,42 @@ export default function StaffRolesScreen({ route }) {
       ]
     );
   };
+
+  const handleCancelRegistration = () => {
+    Alert.alert(
+      "Cancel Registration",
+      "Are you sure you want to cancel your registration?",
+      [
+        {
+          text: "No",
+          onPress: () => console.log("Cancellation Cancelled"),
+          style: "cancel"
+        },
+        {
+          text: "Yes",
+          onPress: () => {
+            fetch(`http://10.120.216.243:3000/api/events/${eventId}/staffs/${staffId}`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            .then((response) => {
+              if (response.ok) {
+                Alert.alert('Success', 'Your registration has been cancelled.');
+                setRegisteredRole(null);
+                setStaffId(null); // Clear the staff ID
+              } else {
+                Alert.alert('Error', 'Failed to cancel registration. Please try again.');
+              }
+            })
+            .catch((error) => {
+              console.error('Error cancelling registration:', error);
+              Alert.alert('Error', 'An error occurred. Please try again.');
+            });
+        }
+      }
+    ]
+  );
+};
 
   if (loading) {
     return (
@@ -116,16 +167,39 @@ export default function StaffRolesScreen({ route }) {
   }
 
   // Function to render each staff role card
+  // const renderStaffRoleCard = ({ item }) => (
+  //   <View style={styles.card}>
+  //     <Text style={styles.roleName}>{item.name}</Text>
+  //     <Text>Count: {item.count}</Text>
+  //     <TouchableOpacity
+  //       style={styles.registerButton}
+  //       onPress={() => handleRegister(item._id)} // Pass the roleId when registering
+  //     >
+  //       <Text style={styles.registerButtonText}>Register</Text>
+  //     </TouchableOpacity>
+  //   </View>
+  // );
+
+  // Function to render each staff role card
   const renderStaffRoleCard = ({ item }) => (
     <View style={styles.card}>
       <Text style={styles.roleName}>{item.name}</Text>
       <Text>Count: {item.count}</Text>
-      <TouchableOpacity
-        style={styles.registerButton}
-        onPress={() => handleRegister(item._id)} // Pass the roleId when registering
-      >
-        <Text style={styles.registerButtonText}>Register</Text>
-      </TouchableOpacity>
+      {registeredRole === item._id ? (
+        <TouchableOpacity
+          style={styles.registerButton}
+          onPress={handleCancelRegistration}
+        >
+          <Text style={styles.registerButtonText}>Cancel</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={styles.registerButton}
+          onPress={() => handleRegister(item._id)} // Pass the roleId when registering
+        >
+          <Text style={styles.registerButtonText}>Register</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 

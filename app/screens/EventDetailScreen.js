@@ -30,7 +30,7 @@ export default function EventDetailScreen({ route }) {
 
   useEffect(() => {
     // Fetch event details
-    fetch(`http://10.120.216.231:3000/api/events/${eventId}`)
+    fetch(`http://10.120.216.243:3000/api/events/${eventId}`)
       .then((response) => response.json())
       .then((data) => {
         setEvent(data);
@@ -60,7 +60,7 @@ export default function EventDetailScreen({ route }) {
           text: "OK",
           onPress: () => {
             const payload = { ...formData, eventId };
-            fetch(`http://10.120.216.231:3000/api/events/${eventId}/students`, {
+            fetch(`http://10.120.216.243:3000/api/events/${eventId}/students`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
@@ -101,7 +101,7 @@ export default function EventDetailScreen({ route }) {
         {
           text: "Yes",
           onPress: () => {
-            fetch(`http://10.120.216.231:3000/api/events/${eventId}/students/${studentId}`, {
+            fetch(`http://10.120.216.243:3000/api/events/${eventId}/students/${studentId}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
             })
@@ -146,7 +146,7 @@ export default function EventDetailScreen({ route }) {
     <View style={styles.container}>
       {/* Event Poster */}
       <Image
-        source={{ uri: `http://10.120.216.231:3000/uploads/posters/${event.posterName}` }}
+        source={{ uri: `http://10.120.216.243:3000/uploads/posters/${event.posterName}` }}
         style={styles.poster}
       />
 

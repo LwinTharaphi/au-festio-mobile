@@ -8,7 +8,7 @@ export default function BoothListScreen({ route }) {
 
   useEffect(() => {
     // Fetch booths data from the API
-    fetch(`http://10.120.216.231:3000/api/events/${eventId}/booths`)
+    fetch(`http://10.120.216.243:3000/api/events/${eventId}/booths`)
       .then((response) => response.json())
       .then((data) => {
         setBooths(data);
