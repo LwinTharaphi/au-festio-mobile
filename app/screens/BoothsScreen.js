@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 
 export default function BoothListScreen({ route }) {
-  const { eventId } = route.params; // Access route.params to get the eventId
+  const { organizerId, eventId } = route.params; // Access route.params to get the eventId
   const [booths, setBooths] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Fetch booths data from the API
-    fetch(`http://10.120.216.243:3000/api/events/${eventId}/booths`)
+    fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}/booths`)
       .then((response) => response.json())
       .then((data) => {
         setBooths(data);
@@ -18,7 +18,7 @@ export default function BoothListScreen({ route }) {
         console.error('Error fetching booths:', error);
         setLoading(false);
       });
-  }, [eventId]); // Add eventId as a dependency to refetch when it changes
+  }, [organizerId, eventId]); // Add eventId as a dependency to refetch when it changes
 
   if (loading) {
     return (

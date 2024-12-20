@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 
 export default function StaffRolesScreen({ route }) {
-  const { eventId } = route.params; // Access eventId from route params
+  const { organizerId, eventId } = route.params; // Access eventId from route params
   const [staffRoles, setStaffRoles] = useState([]);
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,8 +36,8 @@ export default function StaffRolesScreen({ route }) {
 
     // Fetch event details and staff roles in parallel
     Promise.all([
-      fetch(`http://10.120.216.243:3000/api/events/${eventId}`),
-      fetch(`http://10.120.216.243:3000/api/events/${eventId}/staffroles`),
+      fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}`),
+      fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}/staffroles`),
     ])
       .then(([eventResponse, staffRolesResponse]) => {
         if (!eventResponse.ok || !staffRolesResponse.ok) {
@@ -54,13 +54,7 @@ export default function StaffRolesScreen({ route }) {
         console.error('Error fetching data:', error);
         setLoading(false); // Set loading to false on error
       });
-  }, [eventId]);
-
-  // const handleRegister = (role) => {
-  //   // Set the roleId in the formData state
-  //   setFormData((prevState) => ({ ...prevState, role }));
-  //   setModalVisible(true);
-  // };
+  }, [organizerId,eventId]);
 
   const handleRegister = (role) => {
     if (registeredRole) {
@@ -86,7 +80,7 @@ export default function StaffRolesScreen({ route }) {
           text: "OK",
           onPress: () => {
             const payload = { ...formData, role: formData.role, event };
-            fetch(`http://10.120.216.243:3000/api/events/${eventId}/staffs`, {
+            fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}/staffs`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
@@ -127,7 +121,7 @@ export default function StaffRolesScreen({ route }) {
         {
           text: "Yes",
           onPress: () => {
-            fetch(`http://10.120.216.243:3000/api/events/${eventId}/staffs/${staffId}`, {
+            fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}/staffs/${staffId}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
             })
@@ -165,20 +159,6 @@ export default function StaffRolesScreen({ route }) {
       </View>
     );
   }
-
-  // Function to render each staff role card
-  // const renderStaffRoleCard = ({ item }) => (
-  //   <View style={styles.card}>
-  //     <Text style={styles.roleName}>{item.name}</Text>
-  //     <Text>Count: {item.count}</Text>
-  //     <TouchableOpacity
-  //       style={styles.registerButton}
-  //       onPress={() => handleRegister(item._id)} // Pass the roleId when registering
-  //     >
-  //       <Text style={styles.registerButtonText}>Register</Text>
-  //     </TouchableOpacity>
-  //   </View>
-  // );
 
   // Function to render each staff role card
   const renderStaffRoleCard = ({ item }) => (

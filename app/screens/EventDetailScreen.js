@@ -15,6 +15,7 @@ import {
 
 export default function EventDetailScreen({ route }) {
   const { eventId } = route.params;
+  const {organizerId} = route.params;
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -30,7 +31,7 @@ export default function EventDetailScreen({ route }) {
 
   useEffect(() => {
     // Fetch event details
-    fetch(`http://10.120.216.243:3000/api/events/${eventId}`)
+    fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}`)
       .then((response) => response.json())
       .then((data) => {
         setEvent(data);
@@ -40,7 +41,7 @@ export default function EventDetailScreen({ route }) {
         console.error('Error fetching event details:', error);
         setLoading(false);
       });
-  }, [eventId]);
+  }, [organizerId,eventId]);
 
   const handleRegister = () => {
     setModalVisible(true);
@@ -60,7 +61,7 @@ export default function EventDetailScreen({ route }) {
           text: "OK",
           onPress: () => {
             const payload = { ...formData, eventId };
-            fetch(`http://10.120.216.243:3000/api/events/${eventId}/students`, {
+            fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}/students`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
@@ -101,7 +102,7 @@ export default function EventDetailScreen({ route }) {
         {
           text: "Yes",
           onPress: () => {
-            fetch(`http://10.120.216.243:3000/api/events/${eventId}/students/${studentId}`, {
+            fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}/students/${studentId}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
             })

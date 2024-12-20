@@ -8,14 +8,14 @@ import { Ionicons } from '@expo/vector-icons'; // Import icons
 const Tab = createBottomTabNavigator();
 
 export default function EventDetailTabs({ route }) {
-  const { eventId } = route.params; // Get eventId from route params
-
+  const { organizerId,eventId } = route.params; // Get eventId from route params
+  
   return (
     <Tab.Navigator>
       <Tab.Screen
         name="Details"
         component={EventDetailScreen}
-        initialParams={{ eventId }}
+        initialParams={{ organizerId,eventId }}
         options={{
           tabBarLabel: 'Details',
           tabBarIcon: ({ color, size }) => (
@@ -26,7 +26,7 @@ export default function EventDetailTabs({ route }) {
       <Tab.Screen
         name="Staffs"
         component={StaffsScreen}
-        initialParams={{ eventId }}
+        initialParams={{organizerId, eventId }}
         options={{
           tabBarLabel: 'Staffs',
           tabBarIcon: ({ color, size }) => (
@@ -37,7 +37,7 @@ export default function EventDetailTabs({ route }) {
       <Tab.Screen
         name="Booths"
         component={BoothsScreen}
-        initialParams={{ eventId }}
+        initialParams={{organizerId, eventId }}
         options={{
           tabBarLabel: 'Booths',
           tabBarIcon: ({ color, size }) => (
