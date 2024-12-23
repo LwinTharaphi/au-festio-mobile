@@ -1,13 +1,13 @@
 export async function fetchEvents() {
   try {
     // Fetch all organizers
-    const organizersResponse = await fetch('http://10.120.216.243:3000/api/event-organizers');
+    const organizersResponse = await fetch('http://10.120.217.237:3000/api/event-organizers');
     if (!organizersResponse.ok) throw new Error('Failed to fetch organizers');
     const organizers = await organizersResponse.json();
 
     // Fetch events for each organizer
     const eventPromises = organizers.map((organizer) =>
-      fetch(`http://10.120.216.243:3000/api/organizers/${organizer._id}/events`)
+      fetch(`http://10.120.217.237:3000/api/organizers/${organizer._id}/events`)
         .then((response) => {
           if (!response.ok) throw new Error(`Failed to fetch events for organizer ${organizer._id}`);
           return response.json();

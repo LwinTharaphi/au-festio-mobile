@@ -36,8 +36,8 @@ export default function StaffRolesScreen({ route }) {
 
     // Fetch event details and staff roles in parallel
     Promise.all([
-      fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}`),
-      fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}/staffroles`),
+      fetch(`http://10.120.217.237:3000/api/organizers/${organizerId}/events/${eventId}`),
+      fetch(`http://10.120.217.237:3000/api/organizers/${organizerId}/events/${eventId}/staffroles`),
     ])
       .then(([eventResponse, staffRolesResponse]) => {
         if (!eventResponse.ok || !staffRolesResponse.ok) {
@@ -80,7 +80,7 @@ export default function StaffRolesScreen({ route }) {
           text: "OK",
           onPress: () => {
             const payload = { ...formData, role: formData.role, event };
-            fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}/staffs`, {
+            fetch(`http://10.120.217.237:3000/api/organizers/${organizerId}/events/${eventId}/staffs`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
@@ -121,7 +121,7 @@ export default function StaffRolesScreen({ route }) {
         {
           text: "Yes",
           onPress: () => {
-            fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}/staffs/${staffId}`, {
+            fetch(`http://10.120.217.237:3000/api/organizers/${organizerId}/events/${eventId}/staffs/${staffId}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
             })

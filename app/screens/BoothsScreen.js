@@ -8,7 +8,7 @@ export default function BoothListScreen({ route }) {
 
   useEffect(() => {
     // Fetch booths data from the API
-    fetch(`http://10.120.216.243:3000/api/organizers/${organizerId}/events/${eventId}/booths`)
+    fetch(`http://10.120.217.237:3000/api/organizers/${organizerId}/events/${eventId}/booths`)
       .then((response) => response.json())
       .then((data) => {
         setBooths(data);
@@ -73,6 +73,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3.84,
     elevation: 5,
+    maxWidth: '45%'
   },
   boothName: {
     fontSize: 18,
