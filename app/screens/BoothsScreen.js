@@ -8,7 +8,7 @@ export default function BoothListScreen({ route }) {
 
   useEffect(() => {
     // Fetch booths data from the API
-    fetch(`http://10.120.217.237:3000/api/organizers/${organizerId}/events/${eventId}/booths`)
+    fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/booths`)
       .then((response) => response.json())
       .then((data) => {
         setBooths(data);

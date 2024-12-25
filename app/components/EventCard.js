@@ -6,7 +6,7 @@ export default function EventCard({ event, onPress }) {
     <TouchableOpacity onPress={onPress} style={styles.card}>
       {/* Event Poster */}
       <Image
-        source={{ uri: `http://10.120.217.237:3000${event.poster}` }} // Replace with correct server IP
+        source={{ uri: `https://au-festio.vercel.app${event.poster}` }} // Replace with correct server IP
         style={styles.poster}
       />
       {/* Event Title */}

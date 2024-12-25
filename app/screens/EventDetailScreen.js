@@ -39,7 +39,7 @@ export default function EventDetailScreen({ route }) {
 
   useEffect(() => {
     // Fetch event details
-    fetch(`http://10.120.217.237:3000/api/organizers/${organizerId}/events/${eventId}`)
+    fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}`)
       .then((response) => response.json())
       .then((data) => {
         setEvent(data);
@@ -115,7 +115,7 @@ export default function EventDetailScreen({ route }) {
                 type: 'image/jpeg',
               });
             }
-            fetch(`http://10.120.217.237:3000/api/organizers/${organizerId}/events/${eventId}/students`, {
+            fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
@@ -156,7 +156,7 @@ export default function EventDetailScreen({ route }) {
         {
           text: "Yes",
           onPress: () => {
-            fetch(`http://10.120.217.237:3000/api/organizers/${organizerId}/events/${eventId}/students/${studentId}`, {
+            fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/${studentId}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
             })
@@ -201,7 +201,7 @@ export default function EventDetailScreen({ route }) {
       <View style={styles.container}>
         {/* Event Poster */}
         <Image
-          source={{ uri: `http://10.120.217.237:3000/uploads/posters/${event.posterName}` }}
+          source={{ uri: `https://au-festio.vercel.app/uploads/posters/${event.posterName}` }}
           style={styles.poster}
         />
 
@@ -282,7 +282,7 @@ export default function EventDetailScreen({ route }) {
                 <>
                   <TouchableOpacity onPress={handleImageClick}>
                     <Image
-                      source={{ uri: `http://10.120.217.237:3000/uploads/QR/${event.qrName}` }}
+                      source={{ uri: `https://au-festio.vercel.app/uploads/QR/${event.qrName}` }}
                       style={styles.qrImage}
                     />
                   </TouchableOpacity>
@@ -327,7 +327,7 @@ export default function EventDetailScreen({ route }) {
                     <TouchableWithoutFeedback onPress={handleImageClose}>
                       <View style={styles.modalContainer}>
                         <Image
-                          source={{ uri: `http://10.120.217.237:3000/uploads/QR/${event.qrName}` }}
+                          source={{ uri: `https://au-festio.vercel.app/uploads/QR/${event.qrName}` }}
                           style={styles.fullScreenImage}
                         />
                       </View>
