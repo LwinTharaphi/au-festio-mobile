@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {
@@ -19,6 +20,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function EventDetailScreen({ route }) {
+  const navigation = useNavigation();
   const { eventId } = route.params;
   const { organizerId } = route.params;
   const [event, setEvent] = useState(null);
@@ -282,7 +284,7 @@ export default function EventDetailScreen({ route }) {
                 <>
                   <TouchableOpacity onPress={handleImageClick}>
                     <Image
-                      source={{ uri: `https://au-festio.vercel.app/uploads/QR/${event.qrName}` }}
+                      source={{ uri: `https://au-festio.vercel.app/uploads/qrcodes/${event.qrName}` }}
                       style={styles.qrImage}
                     />
                   </TouchableOpacity>

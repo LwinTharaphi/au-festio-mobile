@@ -1,10 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Navigation from '../navigation';
 
 export default function LocationScreen() {
   return (
-    
     <View style={styles.container}>
       <Text>Location Page</Text>
     </View>

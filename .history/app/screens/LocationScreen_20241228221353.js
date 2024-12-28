@@ -4,7 +4,7 @@ import Navigation from '../navigation';
 
 export default function LocationScreen() {
   return (
-    
+    <Navigation />
     <View style={styles.container}>
       <Text>Location Page</Text>
     </View>
