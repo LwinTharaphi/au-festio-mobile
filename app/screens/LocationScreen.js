@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Navigation from '../navigation';
+// import Navigation from '../navigation';
 
 export default function LocationScreen() {
   return (
