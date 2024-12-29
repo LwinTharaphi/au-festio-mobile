@@ -1,34 +1,34 @@
+// // import React from 'react';
+// // import { NavigationContainer } from '@react-navigation/native';
+// // import BottomTabNavigator from './navigation/BottomTabNavigator';
+
+// // export default function App() {
+// //   return (
+// //     <NavigationContainer>
+// //       <BottomTabNavigator />
+// //     </NavigationContainer>
+// //   );
+// // }
+// // import React from 'react';
+// // import { NavigationContainer } from '@react-navigation/native';
+// // import AppNavigator from './navigation/AppNavigator'; // Adjust path
+
+// // export default function App() {
+// //   return (
+// //     <NavigationContainer>
+// //       <AppNavigator />
+// //     </NavigationContainer>
+// //   );
+// // }
 // import React from 'react';
-// import { NavigationContainer } from '@react-navigation/native';
-// import BottomTabNavigator from './navigation/BottomTabNavigator';
+// import "../global.css"
+// import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+// import AppNavigator from './navigation/AppNavigator';
 
 // export default function App() {
 //   return (
-//     <NavigationContainer>
-//       <BottomTabNavigator />
-//     </NavigationContainer>
+//     <SafeAreaProvider>
+//       <AppNavigator /> {/* Navigation already includes NavigationContainer */}
+//     </SafeAreaProvider>
 //   );
 // }
-// import React from 'react';
-// import { NavigationContainer } from '@react-navigation/native';
-// import AppNavigator from './navigation/AppNavigator'; // Adjust path
-
-// export default function App() {
-//   return (
-//     <NavigationContainer>
-//       <AppNavigator />
-//     </NavigationContainer>
-//   );
-// }
-import React from 'react';
-import "../global.css"
-import { SafeAreaView } from 'react-native-safe-area-context';
-import AppNavigator from './navigation/AppNavigator';
-
-export default function App() {
-  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <AppNavigator /> {/* Navigation already includes NavigationContainer */}
-    </SafeAreaView>
-  );
-}
