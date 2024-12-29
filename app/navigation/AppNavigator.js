@@ -5,6 +5,7 @@ import SplashScreen from '../screens/SplashScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import SignInScreen from '../screens/SignInScreen';
 import HomeScreen from '../screens/HomeScreen';
+import SignUpScreen from '../screens/SignUpScreen';
 import GlobalProvider from '../../context/GlobalProvider'
 // import MainTabNavigator from './BottomTabNavigator';
 // import EventDetailScreen from '../screens/EventDetailScreen'; // Example screen outside tabs
@@ -36,9 +37,10 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
         <Stack.Navigator initialRouteName='Splash' screenOptions={{headerShown: false}}>
+            <Stack.Screen options={{presentation: 'modal'}} name="SignIn" component={SignInScreen} />
+            <Stack.Screen options={{presentation: 'modal'}} name="SignUp" component={SignUpScreen} />
             <Stack.Screen name="Splash" component={SplashScreen} />
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
-            <Stack.Screen name="SignIn" component={SignInScreen} />
             <Stack.Screen name="Home" component={HomeScreen} />   
         </Stack.Navigator>
     </NavigationContainer>
