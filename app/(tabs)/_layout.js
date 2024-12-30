@@ -70,4 +70,4 @@ const TabsLayout = () => {
   )
 }
 
-export default AuthLayout
+export default TabsLayout
