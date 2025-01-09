@@ -1,44 +1,55 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import SignInScreen from '../screens/SignInScreen';
 import HomeScreen from '../screens/HomeScreen';
 import SignUpScreen from '../screens/SignUpScreen';
-// import MainTabNavigator from './BottomTabNavigator';
-// import EventDetailScreen from '../screens/EventDetailScreen'; // Example screen outside tabs
-
-// // const Stack = createStackNavigator();
-
-// // export default function AppNavigator() {
-// //   return (
-// //     <Stack.Navigator>
-// //       {/* Tabs will only show on these screens */}
-// //       <Stack.Screen
-// //         name="MainTabs"
-// //         component={MainTabNavigator}
-// //         options={{ headerShown: false }} // Hide header for tabs
-// //       />
-// //       {/* Other screens without tabs */}
-// //       <Stack.Screen
-// //         name="EventDetail"
-// //         component={EventDetailScreen}
-// //         options={{ headerShown: true }} // Show header for details
-// //       />
-// //     </Stack.Navigator>
-// //   );
-// // }
+import { useSelector, useDispatch } from 'react-redux';
+import { onAuthStateChanged, getAuth } from 'firebase/auth';
+import { auth } from '../config/firebase'
+import { setUser } from '../redux/slice/user'
 
 const Stack = createStackNavigator();
 
 export default function AppNavigator() {
-  return (
+  const user = useSelector(state => state.user.user);
 
-    <Stack.Navigator screenOptions={{headerShown: false}}>
-      <Stack.Screen name="Welcome" component={WelcomeScreen} />
-      <Stack.Screen options={{presentation: 'modal'}} name="SignIn" component={SignInScreen} />
-      <Stack.Screen options={{presentation: 'modal'}} name="SignUp" component={SignUpScreen} />
-      <Stack.Screen name="Home" component={HomeScreen} />   
-    </Stack.Navigator>
+  const dispatch = useDispatch();
 
-  )
+   // UseEffect to set up the auth state listener when the component mounts
+   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const userInfo = {
+          name: user.displayName,
+          email: user.email,
+          uid: user.uid,
+          emailVerified: user.emailVerified,
+        };
+        console.log('User logged in:', userInfo);
+        dispatch(setUser(userInfo));
+      } else {
+        console.log('User logged out');
+        dispatch(setUser(null));
+      }
+    });
+
+    // Cleanup the listener on component unmount
+    return () => unsubscribe();
+  }, [dispatch]);
+  if (user) {
+    return (
+      <Stack.Navigator screenOptions={{headerShown: false}} initialRouteName='Home'>
+        <Stack.Screen name="Home" component={HomeScreen} />
+      </Stack.Navigator>
+    )
+  } else {
+    return (
+      <Stack.Navigator screenOptions={{headerShown: false}}>
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen options={{presentation: 'modal'}} name="SignIn" component={SignInScreen} />
+        <Stack.Screen options={{presentation: 'modal'}} name="SignUp" component={SignUpScreen} />
+      </Stack.Navigator>
+    )
+  }
 }

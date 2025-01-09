@@ -26,6 +26,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AppNavigator from './navigation/AppNavigator';
 import * as SplashScreen from 'expo-splash-screen';
 import { View, Image, StyleSheet } from 'react-native';
+import { Provider } from 'react-redux';
+import { store } from './redux/store';
 
 export default function App() {
   const [isReady, setIsReady] = React.useState(false);
@@ -46,9 +48,9 @@ export default function App() {
     );
   }
   return (
-    <SafeAreaProvider>
+    <Provider store={store}>
       <AppNavigator /> {/* Navigation already includes NavigationContainer */}
-    </SafeAreaProvider>
+    </Provider>
   );
 }
 

@@ -7,9 +7,30 @@ import { colors } from '../theme'
 import { useNavigation } from 'expo-router'
 import BackButton from '../components/BackButton'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '../config/firebase'
 
 export default function SignInScreen() {
   const navigation = useNavigation()
+
+  const [email, setEmail] = React.useState('')
+  const [password, setPassword] = React.useState('')
+
+  const handleSubmit = async() => {
+    // if (!email || !password) {
+    //   alert('Please fill all the fields')
+    // } else {
+    //   alert('Sign In Successful')
+    //   navigation.goBack()
+    //   navigation.navigate('Home')
+    // }
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log('Sign In Successful');
+    } catch (error) {
+      console.error(error.message);
+    }
+  }
   return (
     <GestureHandlerRootView>
       <SafeAreaView className="flex-1 bg-white">
@@ -18,7 +39,7 @@ export default function SignInScreen() {
           <View>
             {/* Back Button */}
             <View className="relative">
-              <View className="absolute top-0 left-0 z-10">
+              <View className="absolute top-5 left-0 z-10">
                 <BackButton />
               </View>
             </View>
@@ -60,6 +81,7 @@ export default function SignInScreen() {
                 <TextInput
                   placeholder="Enter your email"
                   className="p-4 bg-gray-100 rounded-lg"
+                  value={email} onChangeText={value => setEmail(value)}
                 />
               </View>
               <View className="mb-5">
@@ -73,17 +95,19 @@ export default function SignInScreen() {
                   placeholder="Enter your password"
                   secureTextEntry
                   className="p-4 bg-gray-100 rounded-lg"
+                  value={password} onChangeText={value => setPassword(value)}
                 />
               </View>
             </View>
             <View className="flex-row justify-end mb-5">
-              <Text className="text-base text-blue-500">Forgot Password?</Text>
+              <Text className="text-base text-blue-500" onPress={()=>navigation.navigate('Forgot')}>Forgot Password?</Text>
             </View>
             <View>
               {/* Sign In Button */}
               <TouchableOpacity
                 className="py-3 rounded-lg mb-4"
                 style={{ backgroundColor: colors.button }}
+                onPress={handleSubmit}
               >
                 <Text className="text-center text-lg font-bold text-white">
                   Sign In
