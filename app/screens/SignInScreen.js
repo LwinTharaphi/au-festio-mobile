@@ -4,12 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'react-native'
 import "../../global.css"
 import { colors } from '../theme'
-import { useRouter } from 'expo-router'
+import { useNavigation } from 'expo-router'
 import BackButton from '../components/BackButton'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
 
 export default function SignInScreen() {
-  const router = useRouter()
+  const navigation = useNavigation()
   return (
     <GestureHandlerRootView>
       <SafeAreaView className="flex-1 bg-white">
@@ -111,7 +111,7 @@ export default function SignInScreen() {
               <View className="flex-row justify-center mt-4">
                 <Text className="text-base">
                   Don't have an account?{' '}
-                  <Text className="font-bold text-blue-500" onPress={()=>router.push('/signUp')}>Sign Up</Text>
+                  <Text className="font-bold text-blue-500" onPress={()=>navigation.navigate('SignUp')}>Sign Up</Text>
                 </Text>
               </View>
             </View>

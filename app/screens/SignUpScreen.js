@@ -4,12 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'react-native'
 import "../../global.css"
 import { colors } from '../theme'
-import { useRouter} from 'expo-router'
+import { useNavigation } from 'expo-router'
 import BackButton from '../components/BackButton'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
 
-export default function SignUpScreen() {
-  const router = useRouter()
+export default function SignInScreen() {
+  const navigation = useNavigation()
   return (
     <GestureHandlerRootView>
       <SafeAreaView className="flex-1 bg-white">
@@ -23,33 +23,30 @@ export default function SignUpScreen() {
               </View>
             </View>
 
-            {/* Logo */}
-            <View className="flex-row justify-center mt-5 my-3">
-              <Image
-                source={require('../../assets/images/image 80.png')}
-                className="h-70 w-80"
-                resizeMode='contain'
-              />
-            </View>
-
             {/* Welcome Text */}
             <View className="space-y-2 mx-2 mb-5 mt-5">
               <Text
-                className="text-center font-bold text-2xl"
+                className="font-bold text-2xl"
                 style={{ color: colors.heading }}
               >
-                Welcome Back!
-              </Text>
-              <Text
-                className="text-center text-base mt-2"
-                style={{ color: colors.subHeading }}
-              >
-                Use your credentials to access your account
+                Sign Up
               </Text>
             </View>
 
             {/* Form Fields */}
             <View className="space-y-2 mx-2 mb-5">
+              <View className="mb-5">
+                <Text
+                  className="font-bold text-lg mb-2"
+                  style={{ color: colors.heading }}
+                >
+                  Full Name
+                </Text>
+                <TextInput
+                  placeholder="Enter your name"
+                  className="p-4 bg-gray-100 rounded-lg"
+                />
+              </View>
               <View className="mb-5">
                 <Text
                   className="font-bold text-lg mb-2"
@@ -75,9 +72,18 @@ export default function SignUpScreen() {
                   className="p-4 bg-gray-100 rounded-lg"
                 />
               </View>
-            </View>
-            <View className="flex-row justify-end mb-5">
-                <Text className="text-base text-blue-500">Forgot Password?</Text>
+              <View className="mb-5">
+                <Text
+                  className="font-bold text-lg mb-2"
+                  style={{ color: colors.heading }}
+                >
+                  Confirm Password
+                </Text>
+                <TextInput
+                  placeholder="Enter your password again"
+                  className="p-4 bg-gray-100 rounded-lg"
+                />
+              </View>
             </View>
             <View>
               {/* Sign In Button */}
@@ -86,7 +92,7 @@ export default function SignUpScreen() {
                 style={{ backgroundColor: colors.button }}
               >
                 <Text className="text-center text-lg font-bold text-white">
-                  Sign In
+                  Sign Up
                 </Text>
               </TouchableOpacity>
 
@@ -110,8 +116,8 @@ export default function SignUpScreen() {
               {/* Sign Up Link */}
               <View className="flex-row justify-center mt-4">
                 <Text className="text-base">
-                  Don't have an account?{' '}
-                  <Text className="font-bold text-blue-500" onPress={()=>router.push('./SignUpScreen.js')}>Sign Up</Text>
+                  Already have a account?{' '}
+                  <Text className="font-bold text-blue-500" onPress={()=>navigation.navigate("SignIn")}>Sign In</Text>
                 </Text>
               </View>
             </View>
