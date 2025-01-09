@@ -6,7 +6,7 @@ export default function SplashScreen() {
     const navigation = useNavigation()
     const timer = setTimeout(() => {
         clearTimeout(timer)
-        navigation.navigate('Welcome')
+        navigation.navigate('SignIn')
     }, 3000)
   return (
     <View>
