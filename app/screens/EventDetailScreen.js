@@ -138,7 +138,6 @@ export default function EventDetailScreen({ route }) {
                 setStudentId(data._id); // Use the _id from the response
 
                 // Generate QR code data
-                
                 const qrPayload = `${eventId},${data._id}`;
                 setQrData(qrPayload);
 
@@ -206,28 +205,118 @@ export default function EventDetailScreen({ route }) {
     );
   }
 
+  if (isRegistered) {
+    return (
+      <ScrollView>
+        <View style={styles.container}>
+          {/* Section 1: Event Title */}
+          <Text style={styles.title}>You have registered for {event.eventName}</Text>
+          <View style={styles.line} />
+          <Image
+            source={{ uri: `https://au-festio.vercel.app/uploads/posters/${event.posterName}` }}
+            style={styles.fullposter}
+          />
+          <View style={styles.line} />
+          {/* Section 3: Date, Time, and QR Code */}
+          <View style={[styles.detailRow, { justifyContent: "space-between", alignItems: "center" }]}>
+            <View style={styles.eventDetails}>
+              <View style={styles.detailRow}>
+                <Icon name="place" size={24} color="#555" />
+                <Text style={styles.detailText}> {event.location || "N/A"}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Icon name="event" size={24} color="#555" />
+                <Text style={styles.detailText}>
+                  {new Date(event.eventDate).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Icon name="schedule" size={24} color="#555" />
+                <Text style={styles.detailText}>Start: {event.startTime || "N/A"}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Icon name="schedule" size={24} color="#555" />
+                <Text style={styles.detailText}>End: {event.endTime || "N/A"}</Text>
+              </View>
+
+            </View>
+            <View style={{ marginTop: -25 }}>
+              <Text style={styles.detailText}>Your check-in QR:</Text>
+              <TouchableOpacity onPress={() => setqrModalVisible(true)} style={styles.qrContainer}>
+                <QRCode value={qrData} size={100} />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.line} />
+
+          {/* QR Code Modal */}
+          <Modal
+            visible={qrModalVisible}
+            transparent={true}
+            onRequestClose={() => setqrModalVisible(false)}
+          >
+            <TouchableWithoutFeedback onPress={() => setqrModalVisible(false)}>
+              <View style={styles.modalOverlay}>
+                <QRCode value={qrData} size={300} />
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
+
+          {/* Register/Cancel Button */}
+          <Button
+            title={isRegistered ? "Cancel Registration" : "Register"}
+            onPress={isRegistered ? handleCancelRegistration : handleRegister}
+          />
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <ScrollView>
       <View style={styles.container}>
         {/* Event Poster */}
         <Image
           source={{ uri: `https://au-festio.vercel.app/uploads/posters/${event.posterName}` }}
-          style={styles.poster}
+          style={styles.fullposter}
         />
 
         {/* Event Details */}
         <View style={styles.detailsContainer}>
+          {/* Event Title */}
           <Text style={styles.title}>{event.eventName}</Text>
-          <Text style={styles.detail}>Location: {event.location}</Text>
+
+          <View style={styles.line} />
+
+          {/* Event Location */}
           <Text style={styles.detail}>
-            Date: {new Date(event.eventDate).toLocaleDateString()}
+            <Icon name="place" size={20} color="#555" /> Location: {event.location || 'N/A'}
           </Text>
+
+          {/* Event Date */}
           <Text style={styles.detail}>
-            Registration Deadline: {new Date(event.registerationDate).toLocaleDateString()}
+            <Icon name="calendar-today" size={20} color="#555" /> Event Date: {new Date(event.eventDate).toLocaleDateString()}
           </Text>
-          <Text style={styles.detail}>Start Time: {event.startTime || 'N/A'}</Text>
-          <Text style={styles.detail}>End Time: {event.endTime || 'N/A'}</Text>
-          <Text style={styles.detail}>Is Paid: {event.isPaid ? 'Yes' : 'No'}</Text>
+
+          {/* Registration Deadline */}
+          <Text style={styles.detail}>
+            <Icon name="calendar-today" size={20} color="#555" /> Registration Deadline: {new Date(event.registerationDate).toLocaleDateString()}
+          </Text>
+
+          {/* Event Start Time */}
+          <Text style={styles.detail}>
+            <Icon name="access-time" size={20} color="#555" /> Start Time: {event.startTime || 'N/A'}
+          </Text>
+
+          {/* Event End Time */}
+          <Text style={styles.detail}>
+            <Icon name="access-time" size={20} color="#555" /> End Time: {event.endTime || 'N/A'}
+          </Text>
+
+          {/* Paid Event Status */}
+          <Text style={styles.detail}>
+            <Icon name="credit-card" size={20} color="#555" /> {event.isPaid ? "It is a paid event" : "It is a free event"}
+          </Text>
         </View>
 
         {/* Register/Cancel Button */}
@@ -235,14 +324,6 @@ export default function EventDetailScreen({ route }) {
           title={isRegistered ? "Cancel Registration" : "Register"}
           onPress={isRegistered ? handleCancelRegistration : handleRegister}
         />
-
-        {qrData && (
-          <View style={styles.qrCodeContainer}>
-            <Text style={styles.qrText}>Your QR Code for Check-In:</Text>
-            <QRCode value={qrData} size={200} />
-          </View>
-        )}
-
         {/* Registration Modal */}
         <Modal
           visible={modalVisible}
@@ -385,7 +466,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  poster: {
+  fullposter: {
     width: '100%',
     height: 200,
     resizeMode: 'cover',
@@ -394,7 +475,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
   },
@@ -492,5 +573,42 @@ const styles = StyleSheet.create({
   removeText: {
     fontSize: 14,
     color: 'red',
+  },
+  line: {
+    height: 1,
+    backgroundColor: "#ddd",
+    marginVertical: 10,
+  },
+  eventInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  poster: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 20,
+  },
+  studentInfo: {
+    flex: 1,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  detailText: {
+    fontSize: 16,
+    marginLeft: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  qrContainer: {
+    alignSelf: "flex-end",
+    marginTop: 10,
   },
 });
