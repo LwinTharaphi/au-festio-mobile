@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
+import QRCode from 'react-native-qrcode-svg';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {
   View,
@@ -37,6 +38,7 @@ export default function EventDetailScreen({ route }) {
   });
   const [isRegistered, setIsRegistered] = useState(false);
   const [studentId, setStudentId] = useState(null); // State to store student ID
+  const [qrData, setQrData] = useState(null);
   const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
 
   useEffect(() => {
@@ -134,6 +136,12 @@ export default function EventDetailScreen({ route }) {
                 setFormData({ name: '', email: '', faculty: '', phone: '' });
                 setIsRegistered(true);
                 setStudentId(data._id); // Use the _id from the response
+
+                // Generate QR code data
+                
+                const qrPayload = `${eventId},${data._id}`;
+                setQrData(qrPayload);
+
               })
               .catch((error) => {
                 console.error('Error registering:', error);
@@ -227,6 +235,13 @@ export default function EventDetailScreen({ route }) {
           title={isRegistered ? "Cancel Registration" : "Register"}
           onPress={isRegistered ? handleCancelRegistration : handleRegister}
         />
+
+        {qrData && (
+          <View style={styles.qrCodeContainer}>
+            <Text style={styles.qrText}>Your QR Code for Check-In:</Text>
+            <QRCode value={qrData} size={200} />
+          </View>
+        )}
 
         {/* Registration Modal */}
         <Modal
