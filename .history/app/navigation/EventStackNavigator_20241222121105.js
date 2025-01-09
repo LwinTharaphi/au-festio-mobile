@@ -2,7 +2,6 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import EventDetailTabs from './EventDetailTabs';
 import EventsScreen from '../screens/EventsScreen';
-import { NavigationContainer } from '@react-navigation/native';
 
 const Stack = createStackNavigator();
 

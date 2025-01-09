@@ -20,15 +20,15 @@
 // //     </NavigationContainer>
 // //   );
 // // }
-import React from 'react';
-import "../global.css"
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import AppNavigator from './navigation/AppNavigator';
+// import React from 'react';
+// import "../global.css"
+// import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+// import AppNavigator from './navigation/AppNavigator';
 
-export default function App() {
-  return (
-    <SafeAreaProvider>
-      <AppNavigator /> {/* Navigation already includes NavigationContainer */}
-    </SafeAreaProvider>
-  );
-}
+// export default function App() {
+//   return (
+//     <SafeAreaProvider>
+//       <AppNavigator /> {/* Navigation already includes NavigationContainer */}
+//     </SafeAreaProvider>
+//   );
+// }

@@ -35,12 +35,14 @@ const Stack = createStackNavigator();
 
 export default function AppNavigator() {
   return (
-    <Stack.Navigator initialRouteName='Splash' screenOptions={{headerShown: false}}>
-        <Stack.Screen options={{presentation: 'modal'}} name="SignIn" component={SignInScreen} />
-        <Stack.Screen options={{presentation: 'modal'}} name="SignUp" component={SignUpScreen} />
-        <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />   
-    </Stack.Navigator>
+    <NavigationContainer>
+        <Stack.Navigator initialRouteName='Splash' screenOptions={{headerShown: false}}>
+            <Stack.Screen options={{presentation: 'modal'}} name="SignIn" component={SignInScreen} />
+            <Stack.Screen options={{presentation: 'modal'}} name="SignUp" component={SignUpScreen} />
+            <Stack.Screen name="Splash" component={SplashScreen} />
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="Home" component={HomeScreen} />   
+        </Stack.Navigator>
+    </NavigationContainer>
   )
 }

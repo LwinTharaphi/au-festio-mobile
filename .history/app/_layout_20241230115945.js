@@ -7,7 +7,7 @@ import { View, Image, StyleSheet } from 'react-native';
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+export default function Layout({ children }) {
   const [isReady, setIsReady] = useState(false); // State to track when app is ready to show content
 
   useEffect(() => {
