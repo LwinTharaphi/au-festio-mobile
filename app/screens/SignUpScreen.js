@@ -9,10 +9,11 @@ import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
 import { Snackbar } from 'react-native-paper'
 import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from 'firebase/auth'
 import { auth } from '../config/firebase'
-import { useDispatch } from 'react-redux'
-import { setUser } from '../redux/slice/user'
+import { useDispatch, useSelector } from 'react-redux'
+import { setUser, setUserLoading } from '../redux/slice/user'
+import { Loading } from '../components/loading'
 
-export default function SignInScreen() {
+export default function SignUpScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
@@ -24,6 +25,7 @@ export default function SignInScreen() {
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarColor, setSnackbarColor] = React.useState('red');
   const [isAccountCreated, setIsAccountCreated] = React.useState(false); // Track if account is created
+  const {userLoading} = useSelector(state => state.user)
 
   const showSnackbar = (message, color) => {
     setSnackbarMessage(message);
@@ -44,6 +46,7 @@ export default function SignInScreen() {
   
     try {
       // await sendEmailVerification(auth.currentUser);
+      dispatch(setUserLoading(true));
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
       await sendEmailVerification(userCredential.user);
@@ -54,7 +57,7 @@ export default function SignInScreen() {
         displayName: userCredential.user.displayName,
         emailVerified: userCredential.user.emailVerified,
       };
-
+      dispatch(setUserLoading(false));
       // Dispatch to Redux to store the user data
       dispatch(setUser(userInfo));
 
@@ -62,6 +65,7 @@ export default function SignInScreen() {
       showSnackbar('Sign Up Successful', 'green');
       navigation.navigate('Home');
     } catch (error) {
+      dispatch(setUserLoading(false));
       showSnackbar(error.message, 'red');
     }
   };
@@ -161,17 +165,24 @@ export default function SignInScreen() {
               </View>
             </View>
             <View>
-              {/* Sign In Button */}
-              <TouchableOpacity
-                disabled={!name || !email || !password || !confirmPassword}
-                className="py-3 rounded-lg mb-4"
-                style={{ backgroundColor: colors.button }}
-                onPress={handleSubmit}
-              >
-                <Text className="text-center text-lg font-bold text-white">
-                  Sign Up
-                </Text>
-              </TouchableOpacity>
+              { 
+                userLoading? (
+                  <Loading />
+                ) : (
+                  /* Sign In Button */
+                  <TouchableOpacity
+                  disabled={!name || !email || !password || !confirmPassword}
+                  className="py-3 rounded-lg mb-4"
+                  style={{ backgroundColor: colors.button }}
+                  onPress={handleSubmit}
+                  >
+                    <Text className="text-center text-lg font-bold text-white">
+                      Sign Up
+                    </Text>
+                  </TouchableOpacity>
+                )
+              }
+  
 
               {/* Divider */}
               <View className="flex-row items-center my-2 mt-1 mb-5">

@@ -8,6 +8,9 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+android/
+ios/
+.history/
 
 # Native
 *.orig.*
@@ -32,10 +35,12 @@ yarn-error.*
 # local env files
 .env*.local
 .env
+google-services.json
+GoogleService-Info.plist
 
 # typescript
 *.tsbuildinfo
 
 # Firebase config (make sure to add it here to ignore your firebase.js)
-app/config/firebase.js
+# app/config/firebase.js
 app-example

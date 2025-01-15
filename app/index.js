@@ -1,25 +1,5 @@
-// // import React from 'react';
-// // import { NavigationContainer } from '@react-navigation/native';
-// // import BottomTabNavigator from './navigation/BottomTabNavigator';
-
-// // export default function App() {
-// //   return (
-// //     <NavigationContainer>
-// //       <BottomTabNavigator />
-// //     </NavigationContainer>
-// //   );
-// // }
-// // import React from 'react';
-// // import { NavigationContainer } from '@react-navigation/native';
-// // import AppNavigator from './navigation/AppNavigator'; // Adjust path
-
-// // export default function App() {
-// //   return (
-// //     <NavigationContainer>
-// //       <AppNavigator />
-// //     </NavigationContainer>
-// //   );
-// // }
+// import 'expo-dev-client';
+// import "nativewind/dev";  // Add this line for debugging
 import React, { useEffect } from 'react';
 import "../global.css"
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -48,9 +28,11 @@ export default function App() {
     );
   }
   return (
-    <Provider store={store}>
-      <AppNavigator /> {/* Navigation already includes NavigationContainer */}
-    </Provider>
+    <SafeAreaProvider>
+      <Provider store={store}>
+        <AppNavigator /> 
+      </Provider>
+    </SafeAreaProvider>
   );
 }
 
@@ -59,10 +41,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff', // Background color to match the splash screen image
+    backgroundColor: '#fff',
   },
   splashImage: {
-    width: 200, // You can adjust the width and height as per your image's size
+    width: 200, 
     height: 200,
   },
 });

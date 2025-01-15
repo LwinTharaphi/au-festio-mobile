@@ -12,7 +12,7 @@ import { setUser } from '../redux/slice/user'
 const Stack = createStackNavigator();
 
 export default function AppNavigator() {
-  const user = useSelector(state => state.user.user);
+  const {user}= useSelector(state => state.user);
 
   const dispatch = useDispatch();
 

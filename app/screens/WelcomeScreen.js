@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'react-native'
-import "../../global.css"
+import '../../global.css'
 import { colors } from '../theme'
 import { useNavigation } from '@react-navigation/native'
 
