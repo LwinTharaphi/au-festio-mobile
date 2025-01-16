@@ -8,6 +8,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
 import { auth } from '../config/firebase'
 import { setUser } from '../redux/slice/user'
+import MainTabNavigator from './BottomTabNavigator'
 
 const Stack = createStackNavigator();
 
@@ -39,8 +40,8 @@ export default function AppNavigator() {
   }, [dispatch]);
   if (user) {
     return (
-      <Stack.Navigator screenOptions={{headerShown: false}} initialRouteName='Home'>
-        <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Navigator screenOptions={{headerShown: false}} initialRouteName='MainTabs'>
+        <Stack.Screen name="MainTabs" component={MainTabNavigator} />
       </Stack.Navigator>
     )
   } else {

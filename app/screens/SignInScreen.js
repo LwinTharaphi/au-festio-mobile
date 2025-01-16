@@ -31,6 +31,11 @@ export default function SignInScreen() {
   //     webClientId: process.env.webClientId, 
   //   });
   // }, []);
+  const showSnackbar = (message, color) => {
+    setSnackbarMessage(message);
+    setSnackbarColor(color);
+    setSnackbarVisible(true);
+  }
   
 
   const handleSubmit = async() => {

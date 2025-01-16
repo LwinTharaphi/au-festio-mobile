@@ -48,22 +48,21 @@ export default function SignUpScreen() {
       // await sendEmailVerification(auth.currentUser);
       dispatch(setUserLoading(true));
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, { displayName: name });
-      await sendEmailVerification(userCredential.user);
-      // Prepare user data to save to Redux
-      const userInfo = {
-        email: userCredential.user.email,
-        uid: userCredential.user.uid,
-        displayName: userCredential.user.displayName,
-        emailVerified: userCredential.user.emailVerified,
-      };
-      dispatch(setUserLoading(false));
-      // Dispatch to Redux to store the user data
-      dispatch(setUser(userInfo));
+      const user = userCredential.user;
 
-      setIsAccountCreated(true);
-      showSnackbar('Sign Up Successful', 'green');
-      navigation.navigate('Home');
+      if (user) {
+        console.log("Creating profile with displayName:", name);
+        const displayName = name;
+        await updateProfile(user, { displayName: displayName });
+
+        await user.reload();
+        dispatch(setUserLoading(false));
+        // Dispatch to Redux to store the user data
+        dispatch(setUser(user));
+        showSnackbar('Account created successfully!', 'green');
+        setIsAccountCreated(true);
+        // navigation.navigate('LoginScreen'); // Navigate to login screen
+      }
     } catch (error) {
       dispatch(setUserLoading(false));
       showSnackbar(error.message, 'red');
