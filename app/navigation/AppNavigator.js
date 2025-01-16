@@ -17,27 +17,26 @@ export default function AppNavigator() {
 
   const dispatch = useDispatch();
 
-   // UseEffect to set up the auth state listener when the component mounts
-   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('User state changed:', user);
       if (user) {
-        const userInfo = {
-          name: user.displayName,
-          email: user.email,
+        dispatch(setUser({
           uid: user.uid,
+          email: user.email,
+          name: user.displayName || '',
           emailVerified: user.emailVerified,
-        };
-        console.log('User logged in:', userInfo);
-        dispatch(setUser(userInfo));
+        }));
       } else {
         console.log('User logged out');
         dispatch(setUser(null));
       }
     });
-
-    // Cleanup the listener on component unmount
+  
     return () => unsubscribe();
   }, [dispatch]);
+  
+  console.log('Current user:', user);
   if (user) {
     return (
       <Stack.Navigator screenOptions={{headerShown: false}} initialRouteName='MainTabs'>

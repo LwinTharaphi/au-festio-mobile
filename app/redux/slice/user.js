@@ -7,26 +7,26 @@ const initialState = {
 
 export const userSlice = createSlice({
   name: 'user',
-  initialState,
+  initialState: {
+    uid: null,
+    email: null,
+    name: null,
+  },
   reducers: {
     setUser: (state, action) => {
-    //   const { email, uid, displayName, emailVerified } = action.payload;
-
-    //   state.user = email && uid ?{
-    //     email,
-    //     uid,
-    //     displayName : displayName || null,
-    //     emailVerified
-    //     } : null;
-        state.user = action.payload
+      state.user = action.payload;
+ 
+    },
+    logoutUser: (state) => {
+      state.user = null;
     },
     setUserLoading: (state, action) => {
-      state.userLoading = action.payload
+      state.userLoading = action.payload || false;
     }
   },
 })
 
 // Action creators are generated for each case reducer function
-export const { setUser, setUserLoading } = userSlice.actions
+export const { setUser, setUserLoading, logoutUser } = userSlice.actions
 
 export default userSlice.reducer

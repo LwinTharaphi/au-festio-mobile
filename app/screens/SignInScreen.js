@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image } from 'react-native'
 import "../../global.css"
 import { colors } from '../theme'
-import { useNavigation } from 'expo-router'
 import BackButton from '../components/BackButton'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
 import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword , onAuthStateChanged} from 'firebase/auth'
@@ -12,8 +11,9 @@ import { auth } from '../config/firebase'
 import { Snackbar } from 'react-native-paper'
 import { useDispatch, useSelector } from 'react-redux'
 import Loading from '../components/loading'
-import { setUserLoading } from '../redux/slice/user'
+import { setUserLoading, setUser } from '../redux/slice/user'
 import { useAuthRequest } from 'expo-auth-session'
+import { useNavigation } from '@react-navigation/native'
 
 export default function SignInScreen() {
   const navigation = useNavigation()
@@ -24,7 +24,7 @@ export default function SignInScreen() {
   const [snackbarVisible, setSnackbarVisible] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarColor, setSnackbarColor] = React.useState('red');
-  const {userLoading} = useSelector(state => state.user)
+  const {user, userLoading} = useSelector((state) => state.user)
 
   // React.useEffect(() => {
   //   GoogleOneTapSignIn.init({ 
@@ -42,7 +42,12 @@ export default function SignInScreen() {
     try {
       if (email && password) {
         dispatch(setUserLoading(true))
-        await signInWithEmailAndPassword(auth, email, password);
+        const userData = await signInWithEmailAndPassword(auth, email, password);
+        dispatch(setUser({
+          uid: userData.user.uid,
+          email: userData.user.email,
+          name: userData.user.displayName,
+        }));
         dispatch(setUserLoading(false));
         console.log('Sign In Successful');
         showSnackbar('Sign In Successful', 'green');

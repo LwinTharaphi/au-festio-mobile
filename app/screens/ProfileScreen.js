@@ -7,18 +7,38 @@ import { useDispatch, useSelector } from 'react-redux'
 import { signOut } from 'firebase/auth'
 import { auth } from '../config/firebase'
 import { setUser } from '../redux/slice/user'
+import { useNavigation } from '@react-navigation/native'
+import { doc, getDoc } from 'firebase/firestore'
+
 export default function ProfileScreen() {
     const dispatch = useDispatch();
+    const navigation = useNavigation();
     const handleLogout = async() => {
         try{
             await signOut(auth);
             dispatch(setUser(null));
-            console.log('User logged out')
+            console.log('User logged out (ProfileScreen)');
+            // navigation.navigate("Welcome")
         } catch (error) {
             console.log('Error logging out:', error)
         }
     }
-    const user = useSelector(state => state.user);
+    const {user} = useSelector(state => state.user);
+    const [name, setName] = React.useState('');
+    React.useEffect(() => {
+        const fetchUser = async() => {
+            if (user?.uid) {
+                // Fetch user data from firestore
+                const userDoc = doc(db, 'Users', user.uid);
+                const userSnap = await getDoc(userDoc);
+                if (userSnap.exists()) {
+                    setName(userSnap.data().name);
+                }
+            }
+        };
+        fetchUser();
+    }, [user?.uid]);
+
   return (
     <SafeAreaView classname="bg-white">
         {/* <StatusBar barStyle="dark-content" />
@@ -41,6 +61,7 @@ export default function ProfileScreen() {
         ) : (
             <Text>No user logged in</Text>
         )}
+        <Text>Your name: {name}</Text>
         <Button
         title="Logout"
         onPress={handleLogout}

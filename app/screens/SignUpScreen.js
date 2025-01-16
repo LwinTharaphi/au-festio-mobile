@@ -7,11 +7,12 @@ import { useNavigation } from 'expo-router'
 import BackButton from '../components/BackButton'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
 import { Snackbar } from 'react-native-paper'
-import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from 'firebase/auth'
-import { auth } from '../config/firebase'
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth'
+import { auth, db } from '../config/firebase'
 import { useDispatch, useSelector } from 'react-redux'
 import { setUser, setUserLoading } from '../redux/slice/user'
 import { Loading } from '../components/loading'
+import { setDoc, doc } from 'firebase/firestore'
 
 export default function SignUpScreen() {
   const navigation = useNavigation();
@@ -25,7 +26,7 @@ export default function SignUpScreen() {
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarColor, setSnackbarColor] = React.useState('red');
   const [isAccountCreated, setIsAccountCreated] = React.useState(false); // Track if account is created
-  const {userLoading} = useSelector(state => state.user)
+  const { userLoading } = useSelector(state => state.user)
 
   const showSnackbar = (message, color) => {
     setSnackbarMessage(message);
@@ -38,40 +39,56 @@ export default function SignUpScreen() {
       showSnackbar('Please fill all the fields', 'red');
       return;
     }
-  
+
     if (password !== confirmPassword) {
       showSnackbar('Passwords do not match', 'red');
       return;
     }
-  
+
     try {
-      // await sendEmailVerification(auth.currentUser);
       dispatch(setUserLoading(true));
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      await createUserWithEmailAndPassword(auth, email, password)
+        .then(async (userCredential) => {
+          const user = userCredential.user;
 
-      if (user) {
-        console.log("Creating profile with displayName:", name);
-        const displayName = name;
-        await updateProfile(user, { displayName: displayName });
+          if(user){
+            return user.sendEmailVerification().then(() => {
+              return user.updateProfile({
+                displayName: name
+              });
+            });
+          } else {
+            throw new Error('User not found');
+          }
+        })
+        .then(() => {
+          console.log("Validation email sent to "+email);
 
-        await user.reload();
+          dispatch(setUser({
+            uid: auth.currentUser.uid,
+            email: auth.currentUser.email,
+            name: name,
+          }));
+          didpatch(setUserLoading(false));
+          showSnackbar("user registered successfully", "green");
+          setIsAccountCreated(true);
+        })
+        .catch((error) => {
+          console.error(error.message);
+          showSnackbar(error.message, 'red');
+        })
+      
+      } catch (error) {
         dispatch(setUserLoading(false));
-        // Dispatch to Redux to store the user data
-        dispatch(setUser(user));
-        showSnackbar('Account created successfully!', 'green');
-        setIsAccountCreated(true);
-        // navigation.navigate('LoginScreen'); // Navigate to login screen
+        showSnackbar(error.message, 'red');
+      } finally {
+        dispatch(setUserLoading(false));
       }
-    } catch (error) {
-      dispatch(setUserLoading(false));
-      showSnackbar(error.message, 'red');
-    }
   };
 
   const resendVerificationEmail = async () => {
     const user = auth.currentUser;
-    if(user && !user.emailVerified) {
+    if (user && !user.emailVerified) {
       try {
         await sendEmailVerification(user);
         showSnackbar('Verification email sent', 'green');
@@ -82,7 +99,7 @@ export default function SignUpScreen() {
       showSnackbar('Email already verified', 'red');
     }
   }
-  
+
   return (
     <GestureHandlerRootView>
       <SafeAreaView className="flex-1 bg-white">
@@ -164,16 +181,16 @@ export default function SignUpScreen() {
               </View>
             </View>
             <View>
-              { 
-                userLoading? (
+              {
+                userLoading ? (
                   <Loading />
                 ) : (
                   /* Sign In Button */
                   <TouchableOpacity
-                  disabled={!name || !email || !password || !confirmPassword}
-                  className="py-3 rounded-lg mb-4"
-                  style={{ backgroundColor: colors.button }}
-                  onPress={handleSubmit}
+                    disabled={!name || !email || !password || !confirmPassword}
+                    className="py-3 rounded-lg mb-4"
+                    style={{ backgroundColor: colors.button }}
+                    onPress={handleSubmit}
                   >
                     <Text className="text-center text-lg font-bold text-white">
                       Sign Up
@@ -181,7 +198,7 @@ export default function SignUpScreen() {
                   </TouchableOpacity>
                 )
               }
-  
+
 
               {/* Divider */}
               <View className="flex-row items-center my-2 mt-1 mb-5">
@@ -204,7 +221,7 @@ export default function SignUpScreen() {
               <View className="flex-row justify-center mt-4">
                 <Text className="text-base">
                   Already have a account?{' '}
-                  <Text className="font-bold text-blue-500" onPress={()=>navigation.navigate("SignIn")}>Sign In</Text>
+                  <Text className="font-bold text-blue-500" onPress={() => navigation.navigate("SignIn")}>Sign In</Text>
                 </Text>
               </View>
             </View>
