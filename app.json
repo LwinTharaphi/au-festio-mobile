@@ -1,5 +1,6 @@
 {
   "expo": {
+    "sdkVersion": "52.0.0",
     "name": "au-festio-mobile",
     "slug": "au-festio-mobile",
     "version": "1.0.0",

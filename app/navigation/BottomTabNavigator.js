@@ -7,7 +7,8 @@ import LocationScreen from '../screens/LocationScreen';
 
 const Tab = createBottomTabNavigator();
 
-export default function MainTabNavigator() {
+export default function MainTabNavigator({route}) {
+  const {user} = route.params;
   return (
     <Tab.Navigator>
       <Tab.Screen
@@ -24,6 +25,7 @@ export default function MainTabNavigator() {
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
+        initialParams={{user}}
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => (

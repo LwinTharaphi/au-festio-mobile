@@ -5,12 +5,16 @@ import "../global.css"
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AppNavigator from './navigation/AppNavigator';
 import * as SplashScreen from 'expo-splash-screen';
-import { View, Image, StyleSheet } from 'react-native';
-import { Provider } from 'react-redux';
-import { store } from './redux/store';
+import { View, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { auth } from './config/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+// import { Provider } from 'react-redux';
+// import { store } from './redux/store';
 
 export default function App() {
   const [isReady, setIsReady] = React.useState(false);
+  const [user, setUser] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
   useEffect(() => {
     const prepareApp = async () => {
       SplashScreen.preventAutoHideAsync();
@@ -20,18 +24,38 @@ export default function App() {
     }
     prepareApp();
   }, []);
-  if (!isReady) {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('User state changed:', user);
+      if (user) {
+        await user.reload();
+        console.log('Updated displayName after reload:', user.displayName);
+        setUser({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || '',
+          emailVerified: user.emailVerified,
+        });
+      } else {
+        console.log('User logged out');
+        setUser(null);
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+  if (!isReady || loading) {
     return (
       <View style={styles.splashContainer}>
         <Image source={require('../assets/images/au_festio_logo.jpg')} style={styles.splashImage} resizeMode="contain" />
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
   return (
     <SafeAreaProvider>
-      <Provider store={store}>
-        <AppNavigator /> 
-      </Provider>
+      <AppNavigator user={user} /> 
+    
     </SafeAreaProvider>
   );
 }

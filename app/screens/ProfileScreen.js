@@ -9,35 +9,37 @@ import { auth } from '../config/firebase'
 import { setUser } from '../redux/slice/user'
 import { useNavigation } from '@react-navigation/native'
 import { doc, getDoc } from 'firebase/firestore'
-
-export default function ProfileScreen() {
-    const dispatch = useDispatch();
-    const navigation = useNavigation();
+import { onAuthStateChanged } from 'firebase/auth';
+export default function ProfileScreen({route, navigation}) {
+    // const dispatch = useDispatch();
+    const [currentUser, setCurrentUser] = React.useState(route.params.user);
     const handleLogout = async() => {
         try{
             await signOut(auth);
-            dispatch(setUser(null));
+            // dispatch(setUser(null));
             console.log('User logged out (ProfileScreen)');
             // navigation.navigate("Welcome")
         } catch (error) {
             console.log('Error logging out:', error)
         }
     }
-    const {user} = useSelector(state => state.user);
+    // const {user} = useSelector(state => state.user);
     const [name, setName] = React.useState('');
+
     React.useEffect(() => {
-        const fetchUser = async() => {
-            if (user?.uid) {
-                // Fetch user data from firestore
-                const userDoc = doc(db, 'Users', user.uid);
-                const userSnap = await getDoc(userDoc);
-                if (userSnap.exists()) {
-                    setName(userSnap.data().name);
-                }
-            }
-        };
-        fetchUser();
-    }, [user?.uid]);
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            console.log('User in profile ',user.displayName);
+            await user.reload();
+            console.log('user in profile reload ',user.displayName);
+            setCurrentUser({
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName || '',
+                emailVerified: user.emailVerified,
+            });
+        });
+        return () => unsubscribe();
+    }, []);
 
   return (
     <SafeAreaView classname="bg-white">
@@ -56,12 +58,12 @@ export default function ProfileScreen() {
             </View>
         </View> */}
         {/* Show user email or name if logged in */}
-        {user?.email ? (
-            <Text>Welcome, {user.email}</Text>
+        {currentUser? (
+            <Text>Welcome, {currentUser.displayName}</Text>
         ) : (
             <Text>No user logged in</Text>
         )}
-        <Text>Your name: {name}</Text>
+        <Text>Your email: {currentUser.email}</Text>
         <Button
         title="Logout"
         onPress={handleLogout}

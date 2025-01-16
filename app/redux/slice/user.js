@@ -10,11 +10,12 @@ export const userSlice = createSlice({
   initialState: {
     uid: null,
     email: null,
-    name: null,
+    displayName: null,
   },
   reducers: {
     setUser: (state, action) => {
-      state.user = action.payload;
+      console.log('setUser payload',action.payload);
+      state.user = action.payload || null;
  
     },
     logoutUser: (state) => {

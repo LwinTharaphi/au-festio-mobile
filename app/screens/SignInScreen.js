@@ -17,14 +17,14 @@ import { useNavigation } from '@react-navigation/native'
 
 export default function SignInScreen() {
   const navigation = useNavigation()
-  const dispatch = useDispatch()
+  // const dispatch = useDispatch()
 
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [snackbarVisible, setSnackbarVisible] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarColor, setSnackbarColor] = React.useState('red');
-  const {user, userLoading} = useSelector((state) => state.user)
+  // const {user, userLoading} = useSelector((state) => state.user)
 
   // React.useEffect(() => {
   //   GoogleOneTapSignIn.init({ 
@@ -41,21 +41,21 @@ export default function SignInScreen() {
   const handleSubmit = async() => {
     try {
       if (email && password) {
-        dispatch(setUserLoading(true))
+        // dispatch(setUserLoading(true))
         const userData = await signInWithEmailAndPassword(auth, email, password);
-        dispatch(setUser({
-          uid: userData.user.uid,
-          email: userData.user.email,
-          name: userData.user.displayName,
-        }));
-        dispatch(setUserLoading(false));
+        // dispatch(setUser({
+        //   uid: userData.user.uid,
+        //   email: userData.user.email,
+        //   displayName: userData.user.displayName,
+        // }));
+        // dispatch(setUserLoading(false));
         console.log('Sign In Successful');
         showSnackbar('Sign In Successful', 'green');
       } else {
         showSnackbar('Please fill all the fields', 'red');
       }
     } catch (error) {
-      dispatch(setUserLoading(false));
+      // dispatch(setUserLoading(false));
       console.error(error.message);
       showSnackbar(error.message, 'red');
     }
@@ -180,18 +180,12 @@ export default function SignInScreen() {
               <Text className="text-base text-blue-500" onPress={()=>navigation.navigate('Forgot')}>Forgot Password?</Text>
             </View>
             <View>
-              {
-                userLoading? (
-                  <Loading />
-                ) : (
-                  /* Sign In Button */
-                  <TouchableOpacity className="py-3 rounded-lg mb-4" style={{ backgroundColor: colors.button }} onPress={handleSubmit}>
-                    <Text className="text-center text-lg font-bold text-white">
-                      Sign In
-                    </Text>
-                  </TouchableOpacity>
-                )
-              }
+              <TouchableOpacity className="py-3 rounded-lg mb-4" style={{ backgroundColor: colors.button }} onPress={handleSubmit}>
+                <Text className="text-center text-lg font-bold text-white">
+                  Sign In
+                </Text>
+              </TouchableOpacity>
+
 
               {/* Divider */}
               <View className="flex-row items-center my-2 mt-1 mb-5">

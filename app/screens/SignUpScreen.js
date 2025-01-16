@@ -3,11 +3,11 @@ import React from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import "../../global.css"
 import { colors } from '../theme'
-import { useNavigation } from 'expo-router'
+import { useNavigation } from '@react-navigation/native'
 import BackButton from '../components/BackButton'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
 import { Snackbar } from 'react-native-paper'
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth'
+import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from 'firebase/auth'
 import { auth, db } from '../config/firebase'
 import { useDispatch, useSelector } from 'react-redux'
 import { setUser, setUserLoading } from '../redux/slice/user'
@@ -16,7 +16,7 @@ import { setDoc, doc } from 'firebase/firestore'
 
 export default function SignUpScreen() {
   const navigation = useNavigation();
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch();
 
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -26,7 +26,7 @@ export default function SignUpScreen() {
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarColor, setSnackbarColor] = React.useState('red');
   const [isAccountCreated, setIsAccountCreated] = React.useState(false); // Track if account is created
-  const { userLoading } = useSelector(state => state.user)
+  // const { userLoading, user } = useSelector(state => state.user)
 
   const showSnackbar = (message, color) => {
     setSnackbarMessage(message);
@@ -39,66 +39,53 @@ export default function SignUpScreen() {
       showSnackbar('Please fill all the fields', 'red');
       return;
     }
-
+  
     if (password !== confirmPassword) {
       showSnackbar('Passwords do not match', 'red');
       return;
     }
 
+    // dispatch(setUserLoading(true));
     try {
-      dispatch(setUserLoading(true));
-      await createUserWithEmailAndPassword(auth, email, password)
-        .then(async (userCredential) => {
-          const user = userCredential.user;
 
-          if(user){
-            return user.sendEmailVerification().then(() => {
-              return user.updateProfile({
-                displayName: name
-              });
-            });
-          } else {
-            throw new Error('User not found');
-          }
-        })
-        .then(() => {
-          console.log("Validation email sent to "+email);
-
-          dispatch(setUser({
-            uid: auth.currentUser.uid,
-            email: auth.currentUser.email,
-            name: name,
-          }));
-          didpatch(setUserLoading(false));
-          showSnackbar("user registered successfully", "green");
-          setIsAccountCreated(true);
-        })
-        .catch((error) => {
-          console.error(error.message);
-          showSnackbar(error.message, 'red');
-        })
       
-      } catch (error) {
-        dispatch(setUserLoading(false));
-        showSnackbar(error.message, 'red');
-      } finally {
-        dispatch(setUserLoading(false));
-      }
-  };
+      // Create user with email and password
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  
+      // Update the user's profile with the displayName
+      await updateProfile(userCredential.user, { displayName: name });
+      // await sendEmailVerification(user);
+      await userCredential.user.reload(); // Ensure profile update is reflected
+      console.log('User displayName:', userCredential.user.displayName);
 
-  const resendVerificationEmail = async () => {
-    const user = auth.currentUser;
-    if (user && !user.emailVerified) {
-      try {
-        await sendEmailVerification(user);
-        showSnackbar('Verification email sent', 'green');
-      } catch (error) {
-        showSnackbar(error.message, 'red');
+      // dispatch(setUser({
+      //   uid: userCredential.user.uid,
+      //   email: userCredential.user.email,
+      //   displayName: userCredential.user.displayName,
+      //   emailVerified: userCredential.user.emailVerified,
+      // }));
+  
+      showSnackbar('Account created successfully', 'green');
+      setIsAccountCreated(true);
+    } catch (error) {
+      console.error(error.message);
+      // dispatch(setUserLoading(false));
+      
+      // Handle specific Firebase error codes
+      if (error.code === 'auth/email-already-in-use') {
+        showSnackbar('Email is already in use. Please try another email.', 'red');
+      } else if (error.code === 'auth/weak-password') {
+        showSnackbar('Password is too weak. Please choose a stronger password.', 'red');
+      } else if (error.code === 'auth/invalid-email') {
+        showSnackbar('Please enter a valid email address.', 'red');
+      } else {
+        showSnackbar('An unexpected error occurred. Please try again later.', 'red');
       }
-    } else {
-      showSnackbar('Email already verified', 'red');
+    } finally {
+      // dispatch(setUserLoading(false));
     }
-  }
+  };
+  
 
   return (
     <GestureHandlerRootView>
@@ -135,7 +122,7 @@ export default function SignUpScreen() {
                 <TextInput
                   placeholder="Enter your name"
                   className="p-4 bg-gray-100 rounded-lg"
-                  value={name} onChangeText={value => setName(value)}
+                  value={name} onChangeText={setName}
                 />
               </View>
               <View className="mb-5">
@@ -148,7 +135,8 @@ export default function SignUpScreen() {
                 <TextInput
                   placeholder="Enter your email"
                   className="p-4 bg-gray-100 rounded-lg"
-                  value={email} onChangeText={value => setEmail(value)}
+                  value={email} onChangeText={setEmail}
+                  keyboardType="email-address"
                 />
               </View>
               <View className="mb-5">
@@ -162,7 +150,7 @@ export default function SignUpScreen() {
                   placeholder="Enter your password"
                   secureTextEntry
                   className="p-4 bg-gray-100 rounded-lg"
-                  value={password} onChangeText={value => setPassword(value)}
+                  value={password} onChangeText={setPassword}
                 />
               </View>
               <View className="mb-5">
@@ -181,23 +169,17 @@ export default function SignUpScreen() {
               </View>
             </View>
             <View>
-              {
-                userLoading ? (
-                  <Loading />
-                ) : (
-                  /* Sign In Button */
-                  <TouchableOpacity
-                    disabled={!name || !email || !password || !confirmPassword}
-                    className="py-3 rounded-lg mb-4"
-                    style={{ backgroundColor: colors.button }}
-                    onPress={handleSubmit}
-                  >
-                    <Text className="text-center text-lg font-bold text-white">
-                      Sign Up
-                    </Text>
-                  </TouchableOpacity>
-                )
-              }
+              <TouchableOpacity
+                disabled={!name || !email || !password || !confirmPassword}
+                className="py-3 rounded-lg mb-4"
+                style={{ backgroundColor: colors.button }}
+                onPress={handleSubmit}
+              >
+                <Text className="text-center text-lg font-bold text-white">
+                  Sign Up
+                </Text>
+              </TouchableOpacity>
+
 
 
               {/* Divider */}

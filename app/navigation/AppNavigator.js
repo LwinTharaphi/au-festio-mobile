@@ -7,40 +7,42 @@ import SignUpScreen from '../screens/SignUpScreen';
 import { useSelector, useDispatch } from 'react-redux';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
 import { auth } from '../config/firebase'
-import { setUser } from '../redux/slice/user'
+import { setUser, logoutUser } from '../redux/slice/user'
 import MainTabNavigator from './BottomTabNavigator'
 
 const Stack = createStackNavigator();
 
-export default function AppNavigator() {
-  const {user}= useSelector(state => state.user);
+export default function AppNavigator({user}) {
+  // const {user}= useSelector(state => state.user);
+  // console.log("user in app navigator: ", user);
 
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('User state changed:', user);
-      if (user) {
-        dispatch(setUser({
-          uid: user.uid,
-          email: user.email,
-          name: user.displayName || '',
-          emailVerified: user.emailVerified,
-        }));
-      } else {
-        console.log('User logged out');
-        dispatch(setUser(null));
-      }
-    });
+  // useEffect(() => {
+  //   const unsubscribe = onAuthStateChanged(auth, async (user) => {
+  //     console.log('User state changed:', user);
+  //     if (user) {
+  //       await user.reload();
+  //       dispatch(setUser({
+  //         uid: user.uid,
+  //         email: user.email,
+  //         displayName: user.displayName || '',
+  //         emailVerified: user.emailVerified,
+  //       }));
+  //     } else {
+  //       console.log('User logged out');
+  //       dispatch(logoutUser());
+  //     }
+  //   });
   
-    return () => unsubscribe();
-  }, [dispatch]);
+  //   return () => unsubscribe();
+  // }, [dispatch]);
   
-  console.log('Current user:', user);
+  // console.log('Current user:', user);
   if (user) {
     return (
       <Stack.Navigator screenOptions={{headerShown: false}} initialRouteName='MainTabs'>
-        <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+        <Stack.Screen name="MainTabs" component={MainTabNavigator} initialParams={{user}}/>
       </Stack.Navigator>
     )
   } else {
