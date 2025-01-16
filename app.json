@@ -4,12 +4,12 @@
     "slug": "au-festio-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/au_festio_logo.jpg",
     "scheme": "au-festio-mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/images/image 80.png",
+      "image": "./assets/images/au_festio_logo.jpg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },

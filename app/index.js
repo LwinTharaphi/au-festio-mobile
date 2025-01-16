@@ -23,7 +23,7 @@ export default function App() {
   if (!isReady) {
     return (
       <View style={styles.splashContainer}>
-        <Image source={require('../assets/images/image 80.png')} style={styles.splashImage} resizeMode="contain" />
+        <Image source={require('../assets/images/au_festio_logo.jpg')} style={styles.splashImage} resizeMode="contain" />
       </View>
     );
   }
