@@ -19,19 +19,10 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import { AWS_REGION, AWS_BUCKET_NAME } from '@env';
 
 export default function EventDetailScreen({ route}) {
   const navigation = useNavigation();
-  // useLayoutEffect(() => {
-  //   navigation.setOptions({
-  //     tabBarStyle: { display: 'none' },
-  //   });
-  //   return () => {
-  //     navigation.setOptions({
-  //       tabBarStyle: { display: 'flex' },
-  //     });
-  //   };
-  // }, [navigation]);
   const { eventId } = route.params;
   const { organizerId } = route.params;
   const [event, setEvent] = useState(null);
@@ -57,6 +48,8 @@ export default function EventDetailScreen({ route}) {
       .then((response) => response.json())
       .then((data) => {
         setEvent(data);
+        console.log("Event details:", data);
+        console.log("Event Uri", `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/posters/${data.poster}`);
         setLoading(false);
       })
       .catch((error) => {
@@ -254,7 +247,7 @@ export default function EventDetailScreen({ route}) {
           <Text style={styles.title}>You have registered for {event.eventName}</Text>
           <View style={styles.line} />
           <Image
-            source={{ uri: `https://au-festio.vercel.app/uploads/posters/${event.posterName}` }}
+            source={{ uri: `${event.poster}` }}
             style={styles.fullposter}
           />
           <View style={styles.line} />
@@ -318,7 +311,7 @@ export default function EventDetailScreen({ route}) {
       <View style={styles.container}>
         {/* Event Poster */}
         <Image
-          source={{ uri: `https://au-festio.vercel.app/uploads/posters/${event.posterName}` }}
+          source={{ uri: `${event.poster}` }}
           style={styles.fullposter}
         />
 
