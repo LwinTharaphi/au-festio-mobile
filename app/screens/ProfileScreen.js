@@ -1,74 +1,97 @@
-import { View, Text , TextInput, Button} from 'react-native'
-import React from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { StatusBar } from 'expo-status-bar'
-import * as Icon from 'react-native-feather'
-import { useDispatch, useSelector } from 'react-redux'
-import { signOut } from 'firebase/auth'
-import { auth } from '../config/firebase'
-import { setUser } from '../redux/slice/user'
-import { useNavigation } from '@react-navigation/native'
-import { doc, getDoc } from 'firebase/firestore'
-import { onAuthStateChanged } from 'firebase/auth';
-export default function ProfileScreen({route, navigation}) {
-    // const dispatch = useDispatch();
-    const [currentUser, setCurrentUser] = React.useState(route.params.user);
-    const handleLogout = async() => {
-        try{
-            await signOut(auth);
-            // dispatch(setUser(null));
-            console.log('User logged out (ProfileScreen)');
-            // navigation.navigate("Welcome")
-        } catch (error) {
-            console.log('Error logging out:', error)
-        }
-    }
-    // const {user} = useSelector(state => state.user);
-    const [name, setName] = React.useState('');
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { auth } from '../config/firebase'; // Your Firebase configuration
+import { updatePassword, onAuthStateChanged } from 'firebase/auth';
+import { colors } from '../theme';
+import { useNavigation } from '@react-navigation/native';
 
-    React.useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            console.log('User in profile ',user.displayName);
-            await user.reload();
-            console.log('user in profile reload ',user.displayName);
-            setCurrentUser({
-                uid: user.uid,
-                email: user.email,
-                displayName: user.displayName || '',
-                emailVerified: user.emailVerified,
-            });
+export default function ProfileScreen() {
+    const navigation = useNavigation();
+    const [user, setUser] = useState(null);
+
+    // Fetch the current user from Firebase Auth
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
         });
+
         return () => unsubscribe();
     }, []);
 
-  return (
-    <SafeAreaView classname="bg-white">
-        {/* <StatusBar barStyle="dark-content" />
-        <View classname="flex-row items-center space-x-2 px-4 pb-2">
-            <View classname="flex-row flex-1 items-center p-3 rounded-full border border-gray-300">
-                <Icon.Search height="25" width="25" stroke="gray" />
-                <TextInput placeholder='Search for events' classname="ml-2 flex-1" />
-                <View classname="flex-row items-center space-x-1 border-0 border-l-2 pl-2 border-l-gray-300">
-                    <Icon.MapPin height="20" width="20" stroke="gray" />
-                    <Text classname="text-gray-500">Location</Text>
-                </View>
+    const handleLogout = async () => {
+        try {
+        await auth.signOut();
+        console.log('User logged out');
+        } catch (error) {
+        Alert.alert('Error', 'Failed to log out. Please try again.');
+        console.error('Failed to log out:', error);
+        }
+    }
+
+    return (
+        <SafeAreaView className="flex-1 bg-white">
+        <ScrollView className="mx-4">
+            <Text className="text-2xl font-bold text-center my-5" style={{ color: colors.heading }}>
+            Profile
+            </Text>
+
+            {/* Display User Info */}
+            <View className="space-y-4">
+            <View>
+                <Text className="text-lg font-bold mb-2" style={{ color: colors.subHeading }}>
+                Name
+                </Text>
+                <Text className="text-base p-4 bg-gray-100 rounded-lg">
+                {user?.displayName || 'N/A'}
+                </Text>
             </View>
-            <View classname="p-3 rounded-full">
-                <Icon.Filter height="25" width="25" stroke="gray" />
+
+            <View>
+                <Text className="text-lg font-bold mb-2" style={{ color: colors.subHeading }}>
+                Email
+                </Text>
+                <Text className="text-base p-4 bg-gray-100 rounded-lg">
+                {user?.email || 'N/A'}
+                </Text>
             </View>
-        </View> */}
-        {/* Show user email or name if logged in */}
-        {currentUser? (
-            <Text>Welcome, {currentUser.displayName}</Text>
-        ) : (
-            <Text>No user logged in</Text>
-        )}
-        <Text>Your email: {currentUser.email}</Text>
-        <Button
-        title="Logout"
-        onPress={handleLogout}
-        color="#f44336" // You can customize the button color here
-        />
-    </SafeAreaView>
-  )
+
+            <View>
+                <Text className="text-lg font-bold mb-2" style={{ color: colors.subHeading }}>
+                Password
+                </Text>
+                <Text className="text-base p-4 bg-gray-100 rounded-lg">
+                ********
+                </Text>
+            </View>
+            </View>
+
+            {/* Update Password */}
+            <View className="mt-8 space-y-4">
+            <TouchableOpacity
+                className="py-3 rounded-lg"
+                style={{ backgroundColor: colors.button }}
+                onPress={()=>{
+                navigation.navigate('ChangePassword');
+                }}
+            >
+                <Text className="text-center text-lg font-bold text-white">
+                    Change Password
+                </Text>
+            </TouchableOpacity>
+            </View>
+            <View className="mt-8 space-y-4">
+            <TouchableOpacity
+                className="py-3 rounded-lg"
+                style={{ backgroundColor: colors.button }}
+                onPress={handleLogout}
+            >
+                <Text className="text-center text-lg font-bold text-white">
+                    LogOut
+                </Text>
+            </TouchableOpacity>
+            </View>
+        </ScrollView>
+        </SafeAreaView>
+    );
 }

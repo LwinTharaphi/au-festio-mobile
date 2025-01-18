@@ -1,12 +1,12 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import React from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Image } from 'react-native'
+import { Image, Alert } from 'react-native'
 import "../../global.css"
 import { colors } from '../theme'
 import BackButton from '../components/BackButton'
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler'
-import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword , onAuthStateChanged} from 'firebase/auth'
+import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword , onAuthStateChanged,sendPasswordResetEmail} from 'firebase/auth'
 import { auth } from '../config/firebase'
 import { Snackbar } from 'react-native-paper'
 import { useDispatch, useSelector } from 'react-redux'
@@ -108,6 +108,22 @@ export default function SignInScreen() {
   //     }
   //   }
   // };
+  const handleResetPassword = async () => {
+      if (!email) {
+        Alert.alert('Error', 'Please enter your email to reset the password.');
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        Alert.alert(
+          'Password Reset Email Sent',
+          `A password reset email has been sent to ${email}. Please check your inbox.`,
+        );
+      } catch (error) {
+        console.error('Error sending password reset email:', error);
+        Alert.alert('Error', error.message || 'Failed to send password reset email.');
+      }
+  };
   return (
     <GestureHandlerRootView>
       <SafeAreaView className="flex-1 bg-white">
@@ -177,7 +193,9 @@ export default function SignInScreen() {
               </View>
             </View>
             <View className="flex-row justify-end mb-5">
-              <Text className="text-base text-blue-500" onPress={()=>navigation.navigate('Forgot')}>Forgot Password?</Text>
+              <TouchableOpacity onPress={handleResetPassword}>
+              <Text className="text-base text-blue-500">Forgot Password?</Text>
+              </TouchableOpacity>
             </View>
             <View>
               <TouchableOpacity className="py-3 rounded-lg mb-4" style={{ backgroundColor: colors.button }} onPress={handleSubmit}>
