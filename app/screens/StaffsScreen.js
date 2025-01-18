@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import {
   View,
@@ -14,6 +15,7 @@ import {
 } from 'react-native';
 
 export default function StaffRolesScreen({ route }) {
+  const navigation = useNavigation();
   const { organizerId, eventId } = route.params; // Access eventId from route params
   const [staffRoles, setStaffRoles] = useState([]);
   const [event, setEvent] = useState(null);
@@ -124,7 +126,14 @@ export default function StaffRolesScreen({ route }) {
                 return response.json();
               })
               .then((data) => {
-                Alert.alert('Success', 'You have successfully registered!');
+                // Alert.alert('Success', 'You have successfully registered!');
+                // Navigate to RegistrationSuccess screen
+                navigation.navigate('RegistrationSuccess', { eventId, organizerId });
+
+                // Automatically navigate to EventDetail after 3 seconds
+                const timer = setTimeout(() => {
+                  navigation.navigate('EventDetail', { eventId, organizerId });
+                }, 4000); // 3000 ms = 3 seconds
                 setModalVisible(false);
                 setRegisteredRole(formData.role);
                 setStaffId(data._id);
@@ -137,7 +146,7 @@ export default function StaffRolesScreen({ route }) {
           }
         }
       ]
-    );
+    );return () => clearTimeout(timer);
   };
 
   const handleCancelRegistration = () => {
@@ -202,7 +211,7 @@ export default function StaffRolesScreen({ route }) {
         <Text style={styles.roleName}>{item.name}</Text>
         <Text>Count: {item.count}</Text>
         <Text>Spots Left: {displaySpotsLeft}</Text>
-  
+
         {registeredRole === item._id ? (
           <TouchableOpacity
             style={styles.registerButton}
@@ -222,7 +231,7 @@ export default function StaffRolesScreen({ route }) {
       </View>
     );
   };
-  
+
   return (
     <View style={styles.container}>
       <FlatList

@@ -111,7 +111,7 @@ export default function EventDetailScreen({ route }) {
           text: "OK",
           onPress: async () => { // Make this function async
             const payload = { ...formData, eventId };
-  
+
             if (formData.receipt) {
               payload.append('receipt', {
                 uri: formData.receipt.uri,
@@ -119,62 +119,69 @@ export default function EventDetailScreen({ route }) {
                 type: 'image/jpeg',
               });
             }
-  
+
             try {
               const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
               });
-  
+
               if (!response.ok) {
                 throw new Error('Failed to register');
               }
-  
+
               const data = await response.json();
-  
-              Alert.alert('Success', 'You have successfully registered!');
+              // Navigate to RegistrationSuccess screen
+              navigation.navigate('RegistrationSuccess', { eventId, organizerId });
+
+              // Automatically navigate to EventDetail after 3 seconds
+              const timer = setTimeout(() => {
+                navigation.navigate('EventDetail', { eventId, organizerId });
+              }, 4000); // 3000 ms = 3 seconds          
+
               setModalVisible(false);
               setFormData({ name: '', email: '', faculty: '', phone: '' });
               setIsRegistered(true);
               setStudentId(data._id); // Use the _id from the response
-  
+
               // Generate QR code data
-            const qrPayload = `${eventId},${data._id}`;
-            setQrData(qrPayload);
+              const qrPayload = `${eventId},${data._id}`;
+              setQrData(qrPayload);
 
-            // Create the QR code using the react-native-qrcode-svg component
-            const qrCodeData = qrPayload;
+              // Create the QR code using the react-native-qrcode-svg component
+              const qrCodeData = qrPayload;
 
-            // Send the QR code to the API (localhost:3000)
-            fetch('https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/savecheckinqr', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                studentId: data._id, // Use data._id instead of studentId
-                eventId: eventId, // Make sure you have the eventId
-                qrCodeData: qrCodeData, // Send the QR payload
-              }),
-            })
-              .then((response) => response.json())
-              .then((data) => {
-                console.log("QR code saved to the database successfully.", data);
+              // Send the QR code to the API (localhost:3000)
+              fetch('https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/savecheckinqr', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  studentId: data._id, // Use data._id instead of studentId
+                  eventId: eventId, // Make sure you have the eventId
+                  qrCodeData: qrCodeData, // Send the QR payload
+                }),
               })
-              .catch((error) => {
-                console.error("Error posting QR code:", error);
-              });
+                .then((response) => response.json())
+                .then((data) => {
+                  console.log("QR code saved to the database successfully.", data);
+                })
+                .catch((error) => {
+                  console.error("Error posting QR code:", error);
+                });
 
-          } catch (error) {
-            console.error('Error registering:', error);
-            Alert.alert('Error', 'An error occurred. Please try again.');
+            } catch (error) {
+              console.error('Error registering:', error);
+              Alert.alert('Error', 'An error occurred. Please try again.');
+            }
           }
         }
-      }
-    ]
-  );
-};
+      ]
+    ); return () => clearTimeout(timer);
+  };
+
 
   const handleCancelRegistration = () => {
     Alert.alert(

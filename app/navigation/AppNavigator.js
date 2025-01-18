@@ -4,11 +4,13 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import SignInScreen from '../screens/SignInScreen';
 import HomeScreen from '../screens/HomeScreen';
 import SignUpScreen from '../screens/SignUpScreen';
+import RegistrationSuccessScreen from '../screens/RegistrationSuccessScreen';
 import { useSelector, useDispatch } from 'react-redux';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
 import { auth } from '../config/firebase'
 import { setUser, logoutUser } from '../redux/slice/user'
 import MainTabNavigator from './BottomTabNavigator'
+import EventDetailScreen from '../screens/EventDetailScreen';
 
 const Stack = createStackNavigator();
 
@@ -43,6 +45,9 @@ export default function AppNavigator({user}) {
     return (
       <Stack.Navigator screenOptions={{headerShown: false}} initialRouteName='MainTabs'>
         <Stack.Screen name="MainTabs" component={MainTabNavigator} initialParams={{user}}/>
+        <Stack.Screen options={{presentation: 'modal'}} name="EventDetail" component={EventDetailScreen} />
+        <Stack.Screen options={{ presentation: 'modal' }} name="RegistrationSuccess" component={RegistrationSuccessScreen}
+      />
       </Stack.Navigator>
     )
   } else {
