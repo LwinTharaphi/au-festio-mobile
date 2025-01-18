@@ -1,16 +1,38 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons'; // Import Ionicons
 import EventStackNavigator from './EventStackNavigator'; // Replace with your actual stack navigator
-import ProfileScreen from '../screens/ProfileScreen';
 import LocationScreen from '../screens/LocationScreen';
 import ProfileStackNavigator from './ProfileStackNavigator';
+import { useNavigationState } from '@react-navigation/native';
 const Tab = createBottomTabNavigator();
 
-export default function MainTabNavigator({route}) {
+export default function MainTabNavigator({route, navigation}) {
   const {user} = route.params;
+  const navigationState = useNavigationState((state) => state);
+
+  const getNestedRouteName = (stage)=>{
+    if(!stage) return null;
+
+    const route = stage.routes[stage.index];
+    // console.log("route", route);
+
+    if(route.state){
+      return getNestedRouteName(route.state);
+    }
+    return route.name;
+  }
+
+  const currentRoute = getNestedRouteName(navigationState);
+  console.log("currentRoute", currentRoute);
+
+  const hideTabBarScreens = ['EventDetail','Details','Staffs','Booths'];
+
   return (
-    <Tab.Navigator>
+    <Tab.Navigator
+      screenOptions={{
+        tabBarStyle: { display: hideTabBarScreens.includes(currentRoute) ? 'none' : 'flex' }, // Hide the tab bar for Details, Staffs, and Booths
+      }}>
       <Tab.Screen
         name="Events"
         component={EventStackNavigator}
@@ -23,7 +45,7 @@ export default function MainTabNavigator({route}) {
         }}
       />
       <Tab.Screen
-        name="Profile"
+        name="ProfileStack"
         component={ProfileStackNavigator}
         initialParams={{user}}
         options={{

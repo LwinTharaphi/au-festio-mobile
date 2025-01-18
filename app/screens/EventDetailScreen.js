@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import QRCode from 'react-native-qrcode-svg';
@@ -20,8 +20,18 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 
-export default function EventDetailScreen({ route }) {
+export default function EventDetailScreen({ route}) {
   const navigation = useNavigation();
+  // useLayoutEffect(() => {
+  //   navigation.setOptions({
+  //     tabBarStyle: { display: 'none' },
+  //   });
+  //   return () => {
+  //     navigation.setOptions({
+  //       tabBarStyle: { display: 'flex' },
+  //     });
+  //   };
+  // }, [navigation]);
   const { eventId } = route.params;
   const { organizerId } = route.params;
   const [event, setEvent] = useState(null);
