@@ -495,9 +495,12 @@ export default function EventDetailScreen({ route}) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 25,
+    paddingTop: 25,
+    paddingBottom: 150,
+    paddingLeft: 20,
+    paddingRight: 20,
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#fff', 
   },
   loaderContainer: {
     flex: 1,
