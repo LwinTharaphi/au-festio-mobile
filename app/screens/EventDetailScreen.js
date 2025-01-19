@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { AWS_REGION, AWS_BUCKET_NAME } from '@env';
+import { auth } from '../config/firebase'
 
 export default function EventDetailScreen({ route}) {
   const navigation = useNavigation();
@@ -41,6 +41,7 @@ export default function EventDetailScreen({ route}) {
   const [studentId, setStudentId] = useState(null); // State to store student ID
   const [qrData, setQrData] = useState(null);
   const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
+  const user = auth.currentUser;
 
   useEffect(() => {
     // Fetch event details
@@ -49,7 +50,7 @@ export default function EventDetailScreen({ route}) {
       .then((data) => {
         setEvent(data);
         console.log("Event details:", data);
-        console.log("Event Uri", `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/posters/${data.poster}`);
+        // console.log("Event Uri", `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/posters/${data.poster}`);
         setLoading(false);
       })
       .catch((error) => {
@@ -113,7 +114,8 @@ export default function EventDetailScreen({ route}) {
         {
           text: "OK",
           onPress: async () => { // Make this function async
-            const payload = { ...formData, eventId };
+            const firebaseUID = user?.uid;
+            const payload = { ...formData, eventId, firebaseUID};
 
             if (formData.receipt) {
               payload.append('receipt', {
@@ -124,6 +126,7 @@ export default function EventDetailScreen({ route}) {
             }
 
             try {
+
               const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -135,6 +138,7 @@ export default function EventDetailScreen({ route}) {
               }
 
               const data = await response.json();
+              console.log('Registration successful:', data);
               // Navigate to RegistrationSuccess screen
               navigation.navigate('RegistrationSuccess', { eventId, organizerId });
 
@@ -156,7 +160,7 @@ export default function EventDetailScreen({ route}) {
               const qrCodeData = qrPayload;
 
               // Send the QR code to the API (localhost:3000)
-              fetch('https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/savecheckinqr', {
+              fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/savecheckinqr`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
