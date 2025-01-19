@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import EventDetailScreen from '../screens/EventDetailScreen';
 import StaffsScreen from '../screens/StaffsScreen';
 import BoothsScreen from '../screens/BoothsScreen';
+import ScheduleScreen from '../screens/ScheduleScreen';
 import { Ionicons } from '@expo/vector-icons'; // Import icons
 
 const Tab = createBottomTabNavigator();
@@ -42,6 +43,17 @@ export default function EventDetailTabs({ route }) {
           tabBarLabel: 'Booths',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Schedule"
+        component={ScheduleScreen}
+        initialParams={{organizerId, eventId }}
+        options={{
+          tabBarLabel: 'Schedule',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" size={size} color={color} />
           ),
         }}
       />
