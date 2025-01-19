@@ -20,7 +20,7 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 
-export default function EventDetailScreen({ route}) {
+export default function EventDetailScreen({ route }) {
   const navigation = useNavigation();
   // useLayoutEffect(() => {
   //   navigation.setOptions({
@@ -64,6 +64,8 @@ export default function EventDetailScreen({ route}) {
         setLoading(false);
       });
   }, [organizerId, eventId]);
+
+  const currentDate = new Date().toLocaleDateString();
 
   const handleRegister = () => {
     setModalVisible(true);
@@ -341,7 +343,7 @@ export default function EventDetailScreen({ route}) {
 
           {/* Registration Deadline */}
           <Text style={styles.detail}>
-            <Icon name="calendar-today" size={20} color="#555" /> Registration Deadline: {new Date(event.registerationDate).toLocaleDateString()}
+            <Icon name="calendar-today" size={20} color="#555" /> Registration Date: {new Date(event.registerationDate).toLocaleDateString()}
           </Text>
 
           {/* Event Start Time */}
@@ -354,10 +356,10 @@ export default function EventDetailScreen({ route}) {
             <Icon name="access-time" size={20} color="#555" /> End Time: {event.endTime || 'N/A'}
           </Text>
 
-          {/* Paid Event Status */}
-          <Text style={styles.detail}>
-            <Icon name="credit-card" size={20} color="#555" /> {event.isPaid ? "It is a paid event" : "It is a free event"}
+          <Text style={styles.policyText}>
+              You get {event.discount}% early bird discount if you register on {new Date(event.registerationDate).toLocaleDateString()}.          
           </Text>
+
         </View>
 
         {/* Register/Cancel Button */}
@@ -475,7 +477,27 @@ export default function EventDetailScreen({ route}) {
                     </Modal>
                   </>
                 )}
-
+                <View>
+                  <Text style={styles.policyText}>By registering, you agree to the terms and conditions of the event.</Text>
+                  <Text style={styles.policyText}>
+                    Refund Policy:
+                    {event.refundPolicy && event.refundPolicy.length > 0 ? (
+                      event.refundPolicy.map((policy, index) => {
+                        let policyText = ` ${policy.percentage}% in ${policy.days} days`;
+                        // Add comma except for the last policy
+                        if (index < event.refundPolicy.length - 1) {
+                          policyText += ', ';
+                        }
+                        return policyText;
+                      })
+                    ) : (
+                      " No Refund Policy"
+                    )}
+                    {event.refundPolicy && event.refundPolicy.length > 0 && (
+                      ` and no refund after ${event.refundPolicy[event.refundPolicy.length - 1].days} days.`
+                    )}
+                  </Text>
+                </View>
                 <View style={styles.buttonContainer}>
                   <View style={styles.buttonWrapper}>
                     <Button title="Cancel" onPress={() => setModalVisible(false)} />
@@ -500,7 +522,7 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
     paddingRight: 20,
     flex: 1,
-    backgroundColor: '#fff', 
+    backgroundColor: '#fff',
   },
   loaderContainer: {
     flex: 1,
@@ -656,5 +678,11 @@ const styles = StyleSheet.create({
   qrContainer: {
     alignSelf: "flex-end",
     marginTop: 10,
+  },
+  policyText: {
+    fontSize: 10, // small font size
+    color: 'red', // red color
+    marginTop: 5, // optional, adds some spacing above the text
+    marginBottom: 7, // optional, adds some spacing
   },
 });
