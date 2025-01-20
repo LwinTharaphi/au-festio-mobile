@@ -1,47 +1,37 @@
-export async function fetchEvents(firebaseUserId) {
+export async function fetchEvents(firebaseUserId, page = 1, limit = 10) {
   try {
     // Fetch all organizers
     const organizersResponse = await fetch('https://au-festio.vercel.app/api/event-organizers');
     if (!organizersResponse.ok) throw new Error('Failed to fetch organizers');
     const organizers = await organizersResponse.json();
 
-    // Fetch events for each organizer
-    const eventPromises = organizers.map(async (organizer) => {
-      const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizer._id}/events`);
-      if (!response.ok) throw new Error(`Failed to fetch events for organizer ${organizer._id}`);
-      const organizerEvents = await response.json();
+    const events = await Promise.all(
+      organizers.map(async (organizer) => {
+        const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizer._id}/events`);
+        if (!response.ok) throw new Error(`Failed to fetch events for organizer ${organizer._id}`);
+        const organizerEvents = await response.json();
+        console.log("OrganizerEvents",organizerEvents);
+        if (!Array.isArray(organizerEvents.events) || organizerEvents.events.length === 0) {
+          console.log(`No events found for organizer ${organizer.name}`);
+          return [];
+        }
 
-      // console.log(JSON.stringify(organizerEvents,null,2));
-
-      // Handle case where organizerEvents may be undefined or empty
-      if (!Array.isArray(organizerEvents) || organizerEvents.length === 0) {
-        console.log(`No events found for organizer ${organizer.name}`);
-        return [];  // Return an empty array if no events are found
-      }
-
-      // Add registration status to each event
-      const eventsWithRegistrationStatus = await Promise.all(organizerEvents.map(async (event) => {
-        const isRegistered = await fetchEventByFirebaseUserId(organizer._id, event._id, firebaseUserId);
-        return {
-          ...event,
-          isRegistered: isRegistered !== undefined ? isRegistered : false, // Add the registration status to the event object
-        };
-      }));
-
-      return eventsWithRegistrationStatus;
-    });
-
-    // Wait for all event fetches to complete
-    const events = await Promise.all(eventPromises);
-
-    // Combine organizers with their respective events
-    const organizersWithEvents = organizers.map((organizer, index) => ({
+        return Promise.all(
+          organizerEvents.events.map(async (event) => {
+            const isRegistered = await fetchEventByFirebaseUserId(organizer._id, event._id, firebaseUserId);
+            return {
+              ...event,
+              isRegistered: isRegistered !== undefined ? isRegistered : false,
+            };
+          })
+        );
+      })
+    );
+    return organizers.map((organizer, index) => ({
       organizer,
-      events: events[index] || [], // Attach the events for each organizer
+      events: events[index] || [],
+      metadata: events[index]?.metadata || {},
     }));
-
-    // Return the structured data
-    return organizersWithEvents;
   } catch (error) {
     console.error(error);
     return []; // Return an empty array in case of error

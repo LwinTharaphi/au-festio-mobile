@@ -11,6 +11,8 @@ export default function EventsScreen({ navigation }) {
   const [tab, setTab] = useState('registered');
   const [firebaseUserId, setFirebaseUserId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     const firebaseUser = auth.currentUser;
@@ -25,9 +27,10 @@ export default function EventsScreen({ navigation }) {
   }, [firebaseUserId]);
 
   const loadEvents = async () => {
+    if (!hasMore || loading) return;
     setLoading(true);
     try {
-      const data = await fetchEvents(firebaseUserId);
+      const data = await fetchEvents(firebaseUserId, page, 10);
       // Flatten and filter events as required
       // console.log(data);
       const filteredAndSortedEvents = data.flatMap((organizer) =>
@@ -45,8 +48,15 @@ export default function EventsScreen({ navigation }) {
             isRegistered: event.isRegistered,
           }))
       );
-      setEvents(filteredAndSortedEvents);  // Set all events at once
-      console.log("filteredAndSortedEvents",filteredAndSortedEvents);
+      if (filteredAndSortedEvents.length === 0) {
+        setHasMore(false);
+      } else {
+        setEvents((prevEvents) => [...prevEvents, ...filteredAndSortedEvents]);
+        setPage((prevPage) => prevPage + 1);
+        console.log("events",events);
+      }
+      // setEvents(filteredAndSortedEvents);  // Set all events at once
+      // console.log("filteredAndSortedEvents",filteredAndSortedEvents);
     } catch (error) {
       console.error(error);
     } finally {
@@ -57,6 +67,9 @@ export default function EventsScreen({ navigation }) {
   const filteredEvents = events.filter((event) =>
     tab === 'registered' ? event.isRegistered : !event.isRegistered
   );
+
+  // Disable infinite scrolling when all events are loaded
+  const shouldLoadMore = filteredEvents.length < events.length;
 
   return (
     <View style={styles.container}>
@@ -86,24 +99,37 @@ export default function EventsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={filteredEvents}
-        keyExtractor={(item) => item._id.toString()}
-        renderItem={({ item }) => (
-          <EventCard
-            event={item}
-            onPress={() =>
-              navigation.navigate('EventDetail', {
-                eventId: item._id,
-                organizerId: item.organizerId,
-                hideTabs: true,
-              })
-            }
-          />
-        )}
-        ListFooterComponent={loading && <ActivityIndicator size="large" color={colors.button} />}
-        contentContainerStyle={{ padding: 10 }}
-      />
+      {filteredEvents.length === 0 ? (
+        <View style={styles.noEventsContainer}>
+          <Text style={styles.noEventsText}>
+            {tab === 'registered' ? 'No events registered' : 'No events available'}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredEvents}
+          keyExtractor={(item) => `${item._id}`}
+          renderItem={({ item }) => (
+            <EventCard
+              event={item}
+              onPress={() =>
+                navigation.navigate('EventDetail', {
+                  eventId: item._id,
+                  organizerId: item.organizerId,
+                  hideTabs: true,
+                })
+              }
+            />
+          )}
+          onEndReached={shouldLoadMore ? loadEvents : null}
+          onEndReachedThreshold={0.5}
+          initialNumToRender={10}
+          windowSize={5}
+          removeClippedSubviews={true}
+          ListFooterComponent={loading && <ActivityIndicator size="large" color={colors.button} />}
+          contentContainerStyle={{ padding: 10 }}
+        />
+      )}
     </View>
   );
 }
