@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, FlatList, StyleSheet, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import EventCard from '../components/EventCard';
 import { fetchEvents } from '../services/api';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../theme';
 import { auth } from '../config/firebase';
+import io from 'socket.io-client';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function EventsScreen({ navigation }) {
   const [events, setEvents] = useState([]);
@@ -21,39 +23,64 @@ export default function EventsScreen({ navigation }) {
       setFirebaseUserId(firebaseUser.uid);
     }
 
-    if (firebaseUserId) {
-      loadEvents();  // Load all events when firebaseUserId is available
-    }
-  }, [firebaseUserId]);
+    const socket = io('https://au-festio.vercel.app');
+    console.log('Socket:', socket);
+
+    socket.on('eventDataUpdated', () => {
+      console.log('Socket connected:', socket.id);
+    });
+    // if (firebaseUserId) {
+    //   loadEvents();  // Load all events when firebaseUserId is available
+    // }
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (firebaseUserId) {
+        loadEvents();  // Load all events when firebaseUserId is available
+      }
+    }, [firebaseUserId])
+  );
 
   const loadEvents = async () => {
-    if (!hasMore || loading) return;
+    if (!firebaseUserId || !hasMore || loading) return;
     setLoading(true);
     try {
       const data = await fetchEvents(firebaseUserId, page, 10);
       // Flatten and filter events as required
       // console.log(data);
-      const filteredAndSortedEvents = data.flatMap((organizer) =>
-        organizer.events
-          .filter((event) => {
-            const eventDate = new Date(event.eventDate);
-            const currentDate = new Date();
-            currentDate.setHours(0, 0, 0, 0);
-            return eventDate >= currentDate;
-          })
-          // console.log("event",event)
-          .map((event) => ({
-            ...event,
-            organizerId: organizer.organizer._id,
-            isRegistered: event.isRegistered,
-          }))
-      );
-      if (filteredAndSortedEvents.length === 0) {
+      if (data.length === 0) {
         setHasMore(false);
       } else {
-        setEvents((prevEvents) => [...prevEvents, ...filteredAndSortedEvents]);
-        setPage((prevPage) => prevPage + 1);
-        console.log("events",events);
+        const filteredAndSortedEvents = data.flatMap((organizer) =>
+          organizer.events
+            .filter((event) => {
+              const eventDate = new Date(event.eventDate);
+              const currentDate = new Date();
+              currentDate.setHours(0, 0, 0, 0);
+              return eventDate >= currentDate;
+            })
+            // console.log("event",event)
+            .map((event) => ({
+              ...event,
+              organizerId: organizer.organizer._id,
+              isRegistered: event.isRegistered,
+            }))
+        );
+        const uniqueEvents = filteredAndSortedEvents.filter((event, index, self) =>
+          index === self.findIndex((e) => e._id === event._id)
+        );
+        console.log("uniqueEvents",uniqueEvents);
+        if (uniqueEvents.length === 0) {
+          setHasMore(false);
+        } else {
+          setEvents((prevEvents) => [...prevEvents, ...uniqueEvents.filter((newEvent) => !prevEvents.some((existingEvent) => existingEvent._id === newEvent._id))]);
+          setPage((prevPage) => prevPage + 1);
+          // console.log("events",events);
+        }
       }
       // setEvents(filteredAndSortedEvents);  // Set all events at once
       // console.log("filteredAndSortedEvents",filteredAndSortedEvents);
@@ -64,12 +91,10 @@ export default function EventsScreen({ navigation }) {
     }
   };
 
-  const filteredEvents = events.filter((event) =>
-    tab === 'registered' ? event.isRegistered : !event.isRegistered
-  );
+  const filteredEvents = events.filter((event) => (tab === 'registered' ? event.isRegistered : !event.isRegistered));
 
   // Disable infinite scrolling when all events are loaded
-  const shouldLoadMore = filteredEvents.length < events.length;
+  const shouldLoadMore = hasMore && !loading;
 
   return (
     <View style={styles.container}>
@@ -99,7 +124,11 @@ export default function EventsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {filteredEvents.length === 0 ? (
+      {loading && page === 1 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.button} />
+        </View>
+      ) : filteredEvents.length === 0 ? (
         <View style={styles.noEventsContainer}>
           <Text style={styles.noEventsText}>
             {tab === 'registered' ? 'No events registered' : 'No events available'}
@@ -121,13 +150,10 @@ export default function EventsScreen({ navigation }) {
               }
             />
           )}
-          onEndReached={shouldLoadMore ? loadEvents : null}
+          onEndReached={hasMore && !loading ? loadEvents : null}
           onEndReachedThreshold={0.5}
-          initialNumToRender={10}
-          windowSize={5}
-          removeClippedSubviews={true}
           ListFooterComponent={loading && <ActivityIndicator size="large" color={colors.button} />}
-          contentContainerStyle={{ padding: 10 }}
+          contentContainerStyle={styles.listContainer}
         />
       )}
     </View>
