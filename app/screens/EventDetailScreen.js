@@ -40,6 +40,7 @@ export default function EventDetailScreen({ route }) {
   const [isRegistered, setIsRegistered] = useState(false);
   const [studentId, setStudentId] = useState(null); // State to store student ID
   const [qrData, setQrData] = useState(null);
+  const [registeredDate, setRegisteredDate] = useState(null);
   const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
   const user = auth.currentUser;
 
@@ -117,7 +118,7 @@ export default function EventDetailScreen({ route }) {
           text: "OK",
           onPress: async () => { // Make this function async
             const firebaseUID = user?.uid;
-            const payload = { ...formData, eventId, firebaseUID};
+            const payload = { ...formData, eventId, firebaseUID };
 
             if (formData.receipt) {
               payload.append('receipt', {
@@ -139,7 +140,17 @@ export default function EventDetailScreen({ route }) {
                 throw new Error('Failed to register');
               }
 
+              // Fetch the student's data after successful registration
               const data = await response.json();
+
+              if (data.createdAt) {
+                const registeredDate = new Date(data.createdAt);
+                console.log('Student Registration Date:', registeredDate);
+                setRegisteredDate(registeredDate);
+                // Now you can use registrationDate (createdAt) for further processing
+              } else {
+                throw new Error('CreatedAt not found in student data');
+              }
               console.log('Registration successful:', data);
               // Navigate to RegistrationSuccess screen
               navigation.navigate('RegistrationSuccess', { eventId, organizerId });
@@ -147,7 +158,7 @@ export default function EventDetailScreen({ route }) {
               // Automatically navigate to EventDetail after 3 seconds
               const timer = setTimeout(() => {
                 navigation.navigate('EventDetail', { eventId, organizerId });
-              }, 4000); // 3000 ms = 3 seconds          
+              }, 3000); // 3000 ms = 3 seconds          
 
               setModalVisible(false);
               setFormData({ name: '', email: '', faculty: '', phone: '' });
@@ -191,7 +202,6 @@ export default function EventDetailScreen({ route }) {
     ); return () => clearTimeout(timer);
   };
 
-
   const handleCancelRegistration = () => {
     Alert.alert(
       "Cancel Registration",
@@ -200,34 +210,69 @@ export default function EventDetailScreen({ route }) {
         {
           text: "No",
           onPress: () => console.log("Cancellation Cancelled"),
-          style: "cancel"
+          style: "cancel",
         },
         {
-          text: "Yes",
+          text: 'Yes',
           onPress: () => {
-            fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/${studentId}`, {
-              method: 'DELETE',
-              headers: { 'Content-Type': 'application/json' },
-            })
-              // .then((response) => response.json())
+            if (!registeredDate) {
+              Alert.alert('Error', 'Registration date not available.');
+              return;
+            }
+
+            const currentDate = new Date();
+            const diffInTime = currentDate.getTime() - registeredDate.getTime();
+            const diffInDays = Math.floor(diffInTime / (1000 * 60 * 60 * 24));
+            let cancellationMessage = "Your registration has been cancelled.";
+
+            if (event.isPaid) {
+              const sortedRefundPolicy = event.refundPolicy.sort((a, b) => a.days - b.days);
+              const applicablePolicy = sortedRefundPolicy.find((policy) => diffInDays <= policy.days);
+
+              if (applicablePolicy) {
+                console.log("Refund Details:", {
+                  refundPercentage: applicablePolicy.percentage,
+                  eventId: event._id,
+                  studentId: studentId
+                });
+                navigation.navigate('Refund', {
+                  refundPercentage: applicablePolicy.percentage,
+                  eventId: event._id,
+                  studentId,
+                });
+                return;
+              } else {
+                cancellationMessage += " However, you cannot get a refund as the refund period has expired.";
+              }
+            }
+
+            // Proceed with cancellation if event is not paid or refund period is over
+            fetch(
+              `https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/${studentId}`,
+              {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+              }
+            )
               .then((response) => {
                 if (response.ok) {
-                  Alert.alert('Success', 'Your registration has been cancelled.');
+                  Alert.alert("Success", cancellationMessage);
                   setIsRegistered(false);
                   setStudentId(null); // Clear the student ID
                 } else {
-                  Alert.alert('Error', 'Failed to cancel registration. Please try again.');
+                  Alert.alert("Error", "Failed to cancel registration. Please try again.");
                 }
               })
               .catch((error) => {
-                console.error('Error cancelling registration:', error);
-                Alert.alert('Error', 'An error occurred. Please try again.');
+                console.error("Error cancelling registration:", error);
+                Alert.alert("Error", "An error occurred. Please try again.");
               });
-          }
-        }
+          },
+        },
       ]
     );
   };
+
 
   if (loading) {
     return (
@@ -353,8 +398,14 @@ export default function EventDetailScreen({ route }) {
             <Icon name="access-time" size={20} color="#555" /> End Time: {event.endTime || 'N/A'}
           </Text>
 
+          <Text style={styles.detail}>
+            <Icon name="wallet" size={20} color="#555" />
+            {event.isPaid ? `Fees: ${event.price || 'N/A'} TBH` : 'It is a free event'}
+          </Text>
+
+
           <Text style={styles.policyText}>
-              You get {event.discount}% early bird discount if you register on {new Date(event.registerationDate).toLocaleDateString()}.          
+            You get {event.discount}% early bird discount if you register on {new Date(event.registerationDate).toLocaleDateString()}.
           </Text>
 
         </View>

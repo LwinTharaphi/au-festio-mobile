@@ -11,6 +11,7 @@ import { auth } from '../config/firebase'
 import { setUser, logoutUser } from '../redux/slice/user'
 import MainTabNavigator from './BottomTabNavigator'
 import EventDetailScreen from '../screens/EventDetailScreen';
+import RefundScreen from '../screens/RefundScreen';
 
 const Stack = createStackNavigator();
 
@@ -47,6 +48,8 @@ export default function AppNavigator({user}) {
         <Stack.Screen name="MainTabs" component={MainTabNavigator} initialParams={{user}}/>
         <Stack.Screen options={{presentation: 'modal'}} name="EventDetail" component={EventDetailScreen} />
         <Stack.Screen options={{ presentation: 'modal' }} name="RegistrationSuccess" component={RegistrationSuccessScreen}
+      />
+      <Stack.Screen options={{ presentation: 'modal' }} name="Refund" component={RefundScreen}
       />
       </Stack.Navigator>
     )
