@@ -15,17 +15,13 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.reactnativejs.au-festio-mobile",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "package": "com.reactnativejs.au_festio_mobile",
-      "googleServicesFile": "./google-services.json"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -34,7 +30,6 @@
     },
     "plugins": [
       "expo-router",
-      // "@react-native-google-signin/google-signin",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "@react-native-firebase/crashlytics",
