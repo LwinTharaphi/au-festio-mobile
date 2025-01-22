@@ -20,6 +20,7 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { auth } from '../config/firebase'
+import { SvgXml } from 'react-native-svg';
 
 export default function EventDetailScreen({ route }) {
   const navigation = useNavigation();
@@ -58,6 +59,17 @@ export default function EventDetailScreen({ route }) {
         console.error('Error fetching event details:', error);
         setLoading(false);
       });
+    const fetchQRCodes = async () => {
+      try {
+        const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/qr`);
+        const data = await response.json();
+        console.log('QR Code Data:', data);
+        setQrData(data.qrSvg);
+      } catch (error) {
+        console.error('Error fetching QR code:', error);
+      }
+    }
+    fetchQRCodes();
   }, [organizerId, eventId]);
 
   const currentDate = new Date().toLocaleDateString();
@@ -82,6 +94,11 @@ export default function EventDetailScreen({ route }) {
   };
 
   const handleImageUpload = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      Alert.alert("Permission Required", "You need to allow access to the media library.");
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
@@ -89,12 +106,14 @@ export default function EventDetailScreen({ route }) {
     });
 
     if (!result.canceled) {
-      setUploadedImage(result.assets[0].uri); // Save the image URI to state
+      const selectedImage = result.assets[0];
+      console.log('Image uploaded:', result.assets[0]);
+      setFormData({ ...formData, paymentScreenshot: selectedImage,});
     }
   };
 
   const removeImage = () => {
-    setUploadedImage(null);
+    setFormData({ ...formData, paymentScreenshot: null });
   };
 
   const handleImageClick = () => {
@@ -119,14 +138,15 @@ export default function EventDetailScreen({ route }) {
           onPress: async () => { // Make this function async
             const firebaseUID = user?.uid;
             const payload = { ...formData, eventId, firebaseUID };
-
-            if (formData.receipt) {
-              payload.append('receipt', {
-                uri: formData.receipt.uri,
-                name: formData.receipt.name || 'receipt.jpg',
-                type: 'image/jpeg',
-              });
-            }
+            console.log('Registration data:', payload );
+            // if (formData.paymentScreenshot) {
+            //   payload.append('receipt', {
+            //     uri: formData.paymentScreenshot.uri,
+            //     name: formData.paymentScreenshot.name || 'receipt.jpg',
+            //     type: 'image/jpeg',
+            //   });
+            // }
+            // console.log('Registration Payload:', payload);
 
             try {
 
@@ -139,9 +159,10 @@ export default function EventDetailScreen({ route }) {
               if (!response.ok) {
                 throw new Error('Failed to register');
               }
-
               // Fetch the student's data after successful registration
               const data = await response.json();
+              console.log('Registration successful:', response);
+              console.log('Student data:', data);
 
               if (data.createdAt) {
                 const registeredDate = new Date(data.createdAt);
@@ -471,10 +492,7 @@ export default function EventDetailScreen({ route }) {
                 {event.isPaid && (
                   <>
                     <TouchableOpacity onPress={handleImageClick}>
-                      <Image
-                        source={{ uri: `https://au-festio.vercel.app/uploads/qrcodes/${event.qrName}` }}
-                        style={styles.qrImage}
-                      />
+                      <SvgXml xml={qrData} width="200" height="200" />
                     </TouchableOpacity>
                     {/* <Button title="Upload Payment Receipt" onPress={handleReceiptUpload} />
                   {formData.receipt && <Text>Uploaded: {formData.receipt.name}</Text>} */}
@@ -499,9 +517,9 @@ export default function EventDetailScreen({ route }) {
                     <TouchableOpacity onPress={handleImageUpload}>
                       <Text style={styles.uploadText}>Upload Payment Screenshot</Text>
                     </TouchableOpacity>
-                    {uploadedImage && (
+                    {formData.paymentScreenshot && (
                       <View style={styles.uploadedImageContainer}>
-                        <Image source={{ uri: uploadedImage }} style={styles.uploadedImage} />
+                        <Image source={{ uri: formData.paymentScreenshot.uri }} style={styles.uploadedImage} />
                         <TouchableOpacity onPress={removeImage}>
                           <Text style={styles.removeText}>Remove Image</Text>
                         </TouchableOpacity>

@@ -15,6 +15,7 @@ export default function EventsScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [isRegisteredUpdated, setIsRegisteredUpdated] = useState(false);
 
   useEffect(() => {
     const firebaseUser = auth.currentUser;
@@ -42,7 +43,7 @@ export default function EventsScreen({ navigation }) {
       if (firebaseUserId) {
         loadEvents();  // Load all events when firebaseUserId is available
       }
-    }, [firebaseUserId])
+    }, [firebaseUserId,isRegisteredUpdated])
   );
 
   const loadEvents = async () => {
@@ -146,6 +147,7 @@ export default function EventsScreen({ navigation }) {
                   eventId: item._id,
                   organizerId: item.organizerId,
                   hideTabs: true,
+                  onRegister: () => setIsRegisteredUpdated(true),
                 })
               }
             />
