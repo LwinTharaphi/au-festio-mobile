@@ -21,6 +21,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { auth } from '../config/firebase'
 import { SvgXml } from 'react-native-svg';
+import { uploadFile, deleteImage } from '../services/aws';
+import { AWS_BUCKET_NAME, AWS_REGION } from '@env';
 
 export default function EventDetailScreen({ route }) {
   const navigation = useNavigation();
@@ -44,6 +46,7 @@ export default function EventDetailScreen({ route }) {
   const [registeredDate, setRegisteredDate] = useState(null);
   const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
   const user = auth.currentUser;
+  const baseS3Url = `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/`;
 
   useEffect(() => {
     // Fetch event details
@@ -108,12 +111,29 @@ export default function EventDetailScreen({ route }) {
     if (!result.canceled) {
       const selectedImage = result.assets[0];
       console.log('Image uploaded:', result.assets[0]);
-      setFormData({ ...formData, paymentScreenshot: selectedImage,});
+      setFormData({ ...formData, paymentScreenshot: selectedImage });
+
+      // const fileName = selectedImage.uri.split('/').pop();
+      // const imageUrl = await uploadFile(selectedImage, fileName, 'PaymentReceipts');
+      // if (imageUrl) {
+      //   console.log('Image uploaded successfully:', imageUrl);
+      //   setFormData({ ...formData, paymentScreenshot: imageUrl});
+      // } else {
+      //   Alert.alert('Error', 'Failed to upload image. Please try again.');
+      // }
     }
   };
 
-  const removeImage = () => {
+  const removeImage = async () => {
     setFormData({ ...formData, paymentScreenshot: null });
+    // if(formData.paymentScreenshot) {
+    //   const deleteSuccess = await deleteImage(formData.paymentScreenshot);
+    //   if (deleteSuccess) {
+    //     setFormData({ ...formData, paymentScreenshot: null });
+    //   } else {
+    //     Alert.alert('Error', 'Failed to delete image. Please try again.');
+    //   }
+    // }
   };
 
   const handleImageClick = () => {
@@ -138,17 +158,22 @@ export default function EventDetailScreen({ route }) {
           onPress: async () => { // Make this function async
             const firebaseUID = user?.uid;
             const payload = { ...formData, eventId, firebaseUID };
-            console.log('Registration data:', payload );
-            // if (formData.paymentScreenshot) {
-            //   payload.append('receipt', {
-            //     uri: formData.paymentScreenshot.uri,
-            //     name: formData.paymentScreenshot.name || 'receipt.jpg',
-            //     type: 'image/jpeg',
-            //   });
-            // }
-            // console.log('Registration Payload:', payload);
+            // console.log('Registration data:', payload );
+            console.log('Registration Payload:', payload);
 
             try {
+              if(formData.paymentScreenshot) {
+                console.log('Uploading image:', formData.paymentScreenshot);
+                const selectedImage = formData.paymentScreenshot;
+                const fileName = selectedImage.uri.split('/').pop();
+                const imageUrl = await uploadFile(selectedImage, fileName, 'PaymentReceipts');
+                if (imageUrl) {
+                  console.log('Image uploaded successfully:', imageUrl);
+                  payload.paymentScreenshot = imageUrl;
+                } else {
+                  Alert.alert('Error', 'Failed to upload image. Please try again.');
+                }
+              }
 
               const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`, {
                 method: 'POST',
@@ -157,7 +182,8 @@ export default function EventDetailScreen({ route }) {
               });
 
               if (!response.ok) {
-                throw new Error('Failed to register');
+                console.log('Failed to register:', response.status);
+                throw new Error('Failed to register', response.status);
               }
               // Fetch the student's data after successful registration
               const data = await response.json();
@@ -534,10 +560,7 @@ export default function EventDetailScreen({ route }) {
                     >
                       <TouchableWithoutFeedback onPress={handleImageClose}>
                         <View style={styles.modalContainer}>
-                          <Image
-                            source={{ uri: `https://au-festio.vercel.app/uploads/QR/${event.qrName}` }}
-                            style={styles.fullScreenImage}
-                          />
+                        <SvgXml xml={qrData} width="100%" height="100%" />
                         </View>
                       </TouchableWithoutFeedback>
                     </Modal>
