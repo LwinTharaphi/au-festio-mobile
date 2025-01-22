@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import {
@@ -16,7 +16,7 @@ import {
 
 export default function StaffRolesScreen({ route }) {
   const navigation = useNavigation();
-  const { organizerId, eventId } = route.params; // Access eventId from route params
+  const { organizerId, eventId } = route.params;
   const [staffRoles, setStaffRoles] = useState([]);
   const [event, setEvent] = useState(null);
   const [staffData, setStaffData] = useState([]);
@@ -27,68 +27,48 @@ export default function StaffRolesScreen({ route }) {
     email: '',
     phone: '',
     faculty: '',
-    role: '', // roleId added to the form data
+    role: '',
   });
-  const [registeredRole, setRegisteredRole] = useState(null); // State to track registered role
+  const [registeredRole, setRegisteredRole] = useState(null);
   const [staffId, setStaffId] = useState(null);
   const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
 
   useEffect(() => {
-    setLoading(true);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const eventResponse = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}`);
+        const staffRolesResponse = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffroles`);
+        const staffsResponse = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs`);
 
-    Promise.all([
-      fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}`),
-      fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffroles`),
-      fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs`),
-    ])
-      .then(([eventResponse, staffRolesResponse, staffsResponse]) => {
         if (!eventResponse.ok || !staffRolesResponse.ok || !staffsResponse.ok) {
           throw new Error('Failed to fetch data');
         }
-        return Promise.all([
-          eventResponse.json(),
-          staffRolesResponse.json(),
-          staffsResponse.json(),
-        ]);
-      })
-      .then(([eventData, staffRolesData, staffsData]) => {
-        const roleCounts = {};
 
-        // Iterate over the staff data
-        staffsData.forEach(staff => {
-          const roleName = staff.role.name;
+        const [eventData, staffRolesData, staffsData] = await Promise.all([eventResponse.json(), staffRolesResponse.json(), staffsResponse.json()]);
 
-          // Increment the role count for each staff member
-          if (roleCounts[roleName]) {
-            roleCounts[roleName] += 1; // Add 1 for each staff member in that role
-          } else {
-            roleCounts[roleName] = 1; // Initialize count as 1 for the first staff member
-          }
-        });
-
-
-        // Log roleCounts to see if it is populated
-        console.log('roleCounts:', roleCounts);
+        const roleCounts = staffsData.reduce((counts, staff) => {
+          counts[staff.role.name] = (counts[staff.role.name] || 0) + 1;
+          return counts;
+        }, {});
 
         const updatedStaffRolesData = staffRolesData.map(role => ({
           ...role,
           roleCounts: roleCounts[role.name] || 0,
         }));
 
-        // Log updatedStaffRolesData to check if roleCounts is added
-        console.log('updatedStaffRolesData:', updatedStaffRolesData);
-
         setEvent(eventData);
         setStaffRoles(updatedStaffRolesData);
         setStaffData(staffsData);
-        setLoading(false);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Error fetching data:', error);
+      } finally {
         setLoading(false);
-      });
-  }, [organizerId, eventId]);
+      }
+    };
 
+    fetchData();
+  }, [organizerId, eventId]);
 
   const handleRegister = (role) => {
     if (registeredRole) {
@@ -99,7 +79,6 @@ export default function StaffRolesScreen({ route }) {
     setModalVisible(true);
   };
 
-  // Handle Form Submission
   const handleConfirm = () => {
     Alert.alert(
       "Confirm Registration",
@@ -126,18 +105,23 @@ export default function StaffRolesScreen({ route }) {
                 return response.json();
               })
               .then((data) => {
-                // Alert.alert('Success', 'You have successfully registered!');
-                // Navigate to RegistrationSuccess screen
+                const updatedStaffRolesData = staffRoles.map(role => {
+                  if (role._id === formData.role) {
+                    return { ...role, roleCounts: role.roleCounts + 1 }; // Increase count for registered role
+                  }
+                  return role;
+                });
                 navigation.navigate('RegistrationSuccess', { eventId, organizerId });
 
-                // Automatically navigate to EventDetail after 3 seconds
                 const timer = setTimeout(() => {
                   navigation.navigate('EventDetail', { eventId, organizerId });
-                }, 4000); // 3000 ms = 3 seconds
+                }, 4000);
+
+                setStaffRoles(updatedStaffRolesData);
                 setModalVisible(false);
                 setRegisteredRole(formData.role);
                 setStaffId(data._id);
-                setFormData({ id: '', name: '', email: '', faculty: '', phone: '', role: '' }); // Reset form data
+                setFormData({ id: '', name: '', email: '', faculty: '', phone: '', role: '' });
               })
               .catch((error) => {
                 console.error('Error registering:', error);
@@ -146,7 +130,7 @@ export default function StaffRolesScreen({ route }) {
           }
         }
       ]
-    );return () => clearTimeout(timer);
+    );
   };
 
   const handleCancelRegistration = () => {
@@ -168,9 +152,17 @@ export default function StaffRolesScreen({ route }) {
             })
               .then((response) => {
                 if (response.ok) {
+                  // Update the roleCounts after cancellation
+                const updatedStaffRolesData = staffRoles.map(role => {
+                  if (role._id === registeredRole) {
+                    return { ...role, roleCounts: role.roleCounts - 1 }; // Decrease count for the cancelled role
+                  }
+                  return role;
+                });
+                  setStaffRoles(updatedStaffRolesData);
                   Alert.alert('Success', 'Your registration has been cancelled.');
                   setRegisteredRole(null);
-                  setStaffId(null); // Clear the staff ID
+                  setStaffId(null);
                 } else {
                   Alert.alert('Error', 'Failed to cancel registration. Please try again.');
                 }
@@ -184,6 +176,33 @@ export default function StaffRolesScreen({ route }) {
       ]
     );
   };
+
+  const renderStaffRoleCard = useCallback(({ item }) => {
+    const spotsLeft = item.count - item.roleCounts;
+    const displaySpotsLeft = Math.max(spotsLeft, 0);
+    const isSpotsAvailable = displaySpotsLeft > 0;
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.roleName}>{item.name}</Text>
+        <Text>Count: {item.count}</Text>
+        <Text>Spots Left: {displaySpotsLeft}</Text>
+        {registeredRole === item._id ? (
+          <TouchableOpacity style={styles.registerButton} onPress={handleCancelRegistration}>
+            <Text style={styles.registerButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.registerButton, !isSpotsAvailable && { opacity: 0.7 }]}
+            onPress={() => isSpotsAvailable && handleRegister(item._id)}
+            disabled={!isSpotsAvailable}
+          >
+            <Text style={styles.registerButtonText}>Register</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }, [registeredRole, handleCancelRegistration, handleRegister]);
 
   if (loading) {
     return (
@@ -201,106 +220,65 @@ export default function StaffRolesScreen({ route }) {
     );
   }
 
-  // Function to render each staff role card
-  const renderStaffRoleCard = ({ item }) => {
-    const spotsLeft = item.count - item.roleCounts;
-    const displaySpotsLeft = Math.max(spotsLeft, 0); // Display 0 if spotsLeft is negative
-    const isSpotsAvailable = displaySpotsLeft > 0;
-    return (
-      <View style={styles.card}>
-        <Text style={styles.roleName}>{item.name}</Text>
-        <Text>Count: {item.count}</Text>
-        <Text>Spots Left: {displaySpotsLeft}</Text>
-
-        {registeredRole === item._id ? (
-          <TouchableOpacity
-            style={styles.registerButton}
-            onPress={handleCancelRegistration}
-          >
-            <Text style={styles.registerButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.registerButton, !isSpotsAvailable && { opacity: 0.7 }]} // Disable button if no spots are available
-            onPress={() => isSpotsAvailable && handleRegister(item._id)} // Only register if spots are available
-            disabled={!isSpotsAvailable} // Disable the button if spots are 0 or less
-          >
-            <Text style={styles.registerButtonText}>Register</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  };
-
   return (
     <View style={styles.container}>
       <FlatList
         data={staffRoles}
         renderItem={renderStaffRoleCard}
         keyExtractor={(item) => item._id}
-        numColumns={2} // Show two cards per row
+        numColumns={2}
         columnWrapperStyle={styles.row}
+        extraData={registeredRole}
       />
-      {/* Modal for Registration Form */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Register</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="ID"
-              value={formData.id}
-              onChangeText={(text) => setFormData({ ...formData, id: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              value={formData.name}
-              onChangeText={(text) => setFormData({ ...formData, name: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={formData.email}
-              onChangeText={(text) => setFormData({ ...formData, email: text })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Phone"
-              value={formData.phone}
-              onChangeText={(text) => setFormData({ ...formData, phone: text })}
-            />
-            <View style={[styles.pickerContainer, { height: 43 }]}>
-              <Picker
-                selectedValue={formData.faculty}
-                style={[
-                  styles.picker,
-                  { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
-                ]}
-                onValueChange={(value) => setFormData({ ...formData, faculty: value })}
-              >
-                <Picker.Item label="Select Faculty" value="" />
-                {faculties.map((faculty) => (
-                  <Picker.Item key={faculty} label={faculty} value={faculty} />
-                ))}
-              </Picker>
-            </View>
-            <View style={styles.buttonContainer}>
-              <View style={styles.buttonWrapper}>
-                <Button title="Cancel" onPress={() => setModalVisible(false)} />
+      {modalVisible && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Register</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="ID"
+                value={formData.id}
+                onChangeText={(text) => setFormData({ ...formData, id: text })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Name"
+                value={formData.name}
+                onChangeText={(text) => setFormData({ ...formData, name: text })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                value={formData.email}
+                onChangeText={(text) => setFormData({ ...formData, email: text })}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Phone"
+                value={formData.phone}
+                onChangeText={(text) => setFormData({ ...formData, phone: text })}
+              />
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={formData.faculty}
+                  onValueChange={(value) => setFormData({ ...formData, faculty: value })}
+                >
+                  {faculties.map((faculty) => (
+                    <Picker.Item key={faculty} label={faculty} value={faculty} />
+                  ))}
+                </Picker>
               </View>
-              <View style={styles.buttonWrapper}>
-                <Button title="Confirm" onPress={handleConfirm} />
-              </View>
+              <Button title="Confirm" onPress={handleConfirm} />
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -309,7 +287,7 @@ export default function StaffRolesScreen({ route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFF',
     padding: 10,
   },
   loaderContainer: {
@@ -328,7 +306,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3.84,
     elevation: 5,
+    maxWidth: '45%',
+    borderColor: '#A67EEC', // Border color
+    borderWidth: 1, // Border width to make the color visible
   },
+  
   roleName: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -341,7 +323,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingVertical: 8,
     paddingHorizontal: 15,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#A67EEC',
     borderRadius: 5,
     alignItems: 'center',
   },

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image } from 'react-native';
 
 export default function BoothListScreen({ route }) {
   const { organizerId, eventId } = route.params; // Access route.params to get the eventId
@@ -31,6 +31,11 @@ export default function BoothListScreen({ route }) {
   // Function to render each booth card
   const renderBoothCard = ({ item }) => (
     <View style={styles.card}>
+      <Image
+        source={{ uri: `${item.imagePath}` }}
+        style={{ width: '100%', height: 100, borderRadius: 5, marginBottom: 10 }}
+        resizeMode="cover"
+      />
       <Text style={styles.boothName}>{item.boothName}</Text>
       <Text>Booth Number: {item.boothNumber}</Text>
       {/* <Text>Status: {item.status}</Text> */}
@@ -54,7 +59,7 @@ export default function BoothListScreen({ route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFF',
     padding: 10,
   },
   loaderContainer: {
@@ -64,8 +69,8 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    margin: 10,
-    padding: 15,
+    margin: 2,
+    padding: 8,
     backgroundColor: '#f9f9f9',
     borderRadius: 8,
     shadowColor: '#000',
@@ -73,10 +78,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3.84,
     elevation: 5,
-    maxWidth: '45%'
+    maxWidth: '50%',
+    borderColor: '#A67EEC', // Border color
+    borderWidth: 1, // Border width to make the color visible
   },
   boothName: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: 'bold',
     marginBottom: 10,
   },

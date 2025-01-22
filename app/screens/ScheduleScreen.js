@@ -28,16 +28,10 @@ const ScheduleScreen = ({ route }) => {
     fetchSchedules();
   }, [organizerId, eventId]);
 
-  const formatTime = (time) => {
-    const date = new Date(time);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-  };
-
-  const renderItem = ({ item }) => (
+  const renderItem = ({ item, index }) => (
     <View style={styles.tableRow}>
+      <Text style={styles.tableCell}>{index + 1}</Text>
       <Text style={styles.tableCell}>{item.name}</Text>
-      <Text style={styles.tableCell}>{formatTime(item.startTime)}</Text>
-      <Text style={styles.tableCell}>{formatTime(item.endTime)}</Text>
     </View>
   );
 
@@ -59,16 +53,23 @@ const ScheduleScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.tableHeader}>
-        <Text style={[styles.tableCell, styles.headerText]}>Name</Text>
-        <Text style={[styles.tableCell, styles.headerText]}>Start Time</Text>
-        <Text style={[styles.tableCell, styles.headerText]}>End Time</Text>
-      </View>
-      <FlatList
-        data={schedules}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => index.toString()}
-      />
+      {schedules.length === 0 ? (
+        <View style={styles.noDataContainer}>
+          <Text style={styles.noDataText}>No performances available</Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableCell, styles.headerText]}>#</Text>
+            <Text style={[styles.tableCell, styles.headerText]}>Name</Text>
+          </View>
+          <FlatList
+            data={schedules}
+            renderItem={renderItem}
+            keyExtractor={(item, index) => index.toString()}
+          />
+        </>
+      )}
     </View>
   );
 };
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#FFFF',
   },
   tableHeader: {
     flexDirection: 'row',
@@ -90,11 +91,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#dcdcdc',
+    borderBottomColor: '#A67EEC',
   },
   tableCell: {
     flex: 1,
-    textAlign: 'center',
+    textAlign: 'left',
+    marginLeft: 15,
   },
   headerText: {
     fontWeight: 'bold',
@@ -112,6 +114,15 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     fontSize: 16,
+  },
+  noDataContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 18,
+    color: '#555',
   },
 });
 
