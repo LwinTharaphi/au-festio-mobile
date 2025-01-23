@@ -162,7 +162,7 @@ export default function EventDetailScreen({ route }) {
             console.log('Registration Payload:', payload);
 
             try {
-              if(formData.paymentScreenshot) {
+              if (formData.paymentScreenshot) {
                 console.log('Uploading image:', formData.paymentScreenshot);
                 const selectedImage = formData.paymentScreenshot;
                 const fileName = selectedImage.uri.split('/').pop();
@@ -469,7 +469,7 @@ export default function EventDetailScreen({ route }) {
           transparent={true}
           onRequestClose={() => setModalVisible(false)}
         >
-          <ScrollView contentContainerStyle={{ flexGrow: 0.5, paddingTop: 20 }}>
+          <ScrollView contentContainerStyle={{ flexGrow: 0.5, height: '100%' }}>
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Register for Event</Text>
@@ -517,9 +517,13 @@ export default function EventDetailScreen({ route }) {
                 />
                 {event.isPaid && (
                   <>
-                    <TouchableOpacity onPress={handleImageClick}>
-                      <SvgXml xml={qrData} width="200" height="200" />
+                    <TouchableOpacity
+                      onPress={handleImageClick}
+                      style={{ justifyContent: 'center', alignItems: 'center' }}
+                    >
+                      <SvgXml xml={qrData} width="180" height="180" />
                     </TouchableOpacity>
+
                     {/* <Button title="Upload Payment Receipt" onPress={handleReceiptUpload} />
                   {formData.receipt && <Text>Uploaded: {formData.receipt.name}</Text>} */}
 
@@ -540,9 +544,33 @@ export default function EventDetailScreen({ route }) {
                   </View> */}
 
                     {/* Image Upload Button */}
-                    <TouchableOpacity onPress={handleImageUpload}>
-                      <Text style={styles.uploadText}>Upload Payment Screenshot</Text>
+                    <TouchableOpacity
+                      onPress={handleImageUpload}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        padding: 3,
+                        justifyContent: 'center',                      
+                        backgroundColor: '#E8F5E9',
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: '#4CAF50',
+                        marginVertical: 5,
+                      }}
+                    >
+                      <Icon name="cloud-upload" size={35} color="#4CAF50" />
+                      <Text
+                        style={{
+                          marginLeft: 10,
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                          color: '#4CAF50',
+                        }}
+                      >
+                        Upload Payment Screenshot
+                      </Text>
                     </TouchableOpacity>
+
                     {formData.paymentScreenshot && (
                       <View style={styles.uploadedImageContainer}>
                         <Image source={{ uri: formData.paymentScreenshot.uri }} style={styles.uploadedImage} />
@@ -560,7 +588,7 @@ export default function EventDetailScreen({ route }) {
                     >
                       <TouchableWithoutFeedback onPress={handleImageClose}>
                         <View style={styles.modalContainer}>
-                        <SvgXml xml={qrData} width="100%" height="100%" />
+                          <SvgXml xml={qrData} width="100%" height="100%" />
                         </View>
                       </TouchableWithoutFeedback>
                     </Modal>
@@ -651,15 +679,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '90%',
+    flex: 1, // This makes the modal content take up the entire screen height
+    width: '97%', // Ensures the modal content takes up the entire screen width
     backgroundColor: '#fff',
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 10, // Removes the border radius for full-screen appearance
+    elevation: 10,
   },
   modalTitle: {
+    marginTop: 20,
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
   },
   input: {
     borderWidth: 1,

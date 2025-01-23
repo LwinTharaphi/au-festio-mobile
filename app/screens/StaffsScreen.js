@@ -12,6 +12,7 @@ import {
   TextInput,
   Alert,
   Button,
+  ScrollView,
 } from 'react-native';
 
 export default function StaffRolesScreen({ route }) {
@@ -153,12 +154,12 @@ export default function StaffRolesScreen({ route }) {
               .then((response) => {
                 if (response.ok) {
                   // Update the roleCounts after cancellation
-                const updatedStaffRolesData = staffRoles.map(role => {
-                  if (role._id === registeredRole) {
-                    return { ...role, roleCounts: role.roleCounts - 1 }; // Decrease count for the cancelled role
-                  }
-                  return role;
-                });
+                  const updatedStaffRolesData = staffRoles.map(role => {
+                    if (role._id === registeredRole) {
+                      return { ...role, roleCounts: role.roleCounts - 1 }; // Decrease count for the cancelled role
+                    }
+                    return role;
+                  });
                   setStaffRoles(updatedStaffRolesData);
                   Alert.alert('Success', 'Your registration has been cancelled.');
                   setRegisteredRole(null);
@@ -237,46 +238,62 @@ export default function StaffRolesScreen({ route }) {
           visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Register</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="ID"
-                value={formData.id}
-                onChangeText={(text) => setFormData({ ...formData, id: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Name"
-                value={formData.name}
-                onChangeText={(text) => setFormData({ ...formData, name: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={formData.email}
-                onChangeText={(text) => setFormData({ ...formData, email: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Phone"
-                value={formData.phone}
-                onChangeText={(text) => setFormData({ ...formData, phone: text })}
-              />
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={formData.faculty}
-                  onValueChange={(value) => setFormData({ ...formData, faculty: value })}
-                >
-                  {faculties.map((faculty) => (
-                    <Picker.Item key={faculty} label={faculty} value={faculty} />
-                  ))}
-                </Picker>
+          <ScrollView contentContainerStyle={{ flexGrow: 0.5, height: '100%' }}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Register</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="ID"
+                  value={formData.id}
+                  onChangeText={(text) => setFormData({ ...formData, id: text })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Name"
+                  value={formData.name}
+                  onChangeText={(text) => setFormData({ ...formData, name: text })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  keyboardType="email-address"
+                  value={formData.email}
+                  onChangeText={(text) => setFormData({ ...formData, email: text })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Phone"
+                  keyboardType="phone-pad"
+                  value={formData.phone}
+                  onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                />
+                <View style={[styles.pickerContainer, { height: 43 }]}>
+                  <Picker
+                    selectedValue={formData.faculty}
+                    style={[
+                      styles.picker,
+                      { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
+                    ]}
+                    onValueChange={(value) => setFormData({ ...formData, faculty: value })}
+                  >
+                    <Picker.Item label="Select Faculty" value="" />
+                    {faculties.map((faculty) => (
+                      <Picker.Item key={faculty} label={faculty} value={faculty} />
+                    ))}
+                  </Picker>
+                </View>
+                <View style={styles.buttonContainer}>
+                  <View style={styles.buttonWrapper}>
+                    <Button title="Cancel" onPress={() => setModalVisible(false)} />
+                  </View>
+                  <View style={styles.buttonWrapper}>
+                    <Button title="Confirm" onPress={handleConfirm} />
+                  </View>
+                </View>
               </View>
-              <Button title="Confirm" onPress={handleConfirm} />
             </View>
-          </View>
+          </ScrollView>
         </Modal>
       )}
     </View>
@@ -338,10 +355,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '90%',
+    flex: 1, // This makes the modal content take up the entire screen height
+    width: '97%', // Ensures the modal content takes up the entire screen width
     backgroundColor: '#fff',
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 10, // Removes the border radius for full-screen appearance
     elevation: 10,
   },
   modalTitle: {
