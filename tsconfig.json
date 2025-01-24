@@ -3,14 +3,21 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
-    }
+      "@/*": ["./*"]
+    },
+    "allowJs": true, // Allow JavaScript files to be processed
+    "checkJs": false // Disable type checking on JavaScript files
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.js", // Include all JavaScript files
     "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules", // Exclude node_modules from being compiled
+    "dist", // Optional: Exclude the build output directory if applicable
+    "expo-shared",
+    "app/screens"
   ]
 }
