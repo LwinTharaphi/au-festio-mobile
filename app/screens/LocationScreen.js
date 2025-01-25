@@ -56,9 +56,17 @@ export default function LocationScreen({ navigation }) {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         console.error('Permission to access location was denied');
+        Alert.alert(
+          'Permission Required',
+          'This app needs location permissions to function properly. Please enable it in settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
         return;
       }
-
+  
       const location = await Location.getCurrentPositionAsync({});
       setInitialRegion({
         latitude: location.coords.latitude,

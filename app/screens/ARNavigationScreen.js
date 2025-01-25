@@ -15,28 +15,36 @@ export default function ARNavigationScreen({ route }) {
   const [location, setLocation] = useState(null);
   const [magnetometerData, setMagnetometerData] = useState({ x: 0, y: 0, z: 0 });
 
-  // Request permissions
   useEffect(() => {
     (async () => {
       // Request camera permissions
       const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
-
-      // Request location permissions
-      const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
-
-      // Check if both permissions are granted
-      if (cameraStatus !== 'granted' || locationStatus !== 'granted') {
-        console.error('Camera and/or location permissions are required!');
+      if (cameraStatus !== 'granted') {
+        console.error('Camera permission denied');
         Alert.alert(
-          'Permission Required',
-          'This app needs camera and location permissions to function properly.',
+          'Camera Permission Required',
+          'This app needs camera permissions to enable AR features. Please enable it in settings.',
           [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Open Settings', onPress: () => Linking.openSettings() },
           ]
         );
       }
-
+  
+      // Request location permissions
+      const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
+      if (locationStatus !== 'granted') {
+        console.error('Location permission denied');
+        Alert.alert(
+          'Location Permission Required',
+          'This app needs location permissions to provide navigation. Please enable it in settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
+      }
+  
       // Update the permission state
       setHasPermission(cameraStatus === 'granted' && locationStatus === 'granted');
     })();
