@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Platform, Dimensions, Alert, Linking, Button } from 'react-native';
-import { Camera } from 'expo-camera';
-import * as Location from 'expo-location';
-import { Magnetometer } from 'expo-sensors';
-import Svg, { Polygon, Line } from 'react-native-svg';
+import { Camera } from 'expo-camera'; // Correct import
+import * as Location from 'expo-location'; // Correct import
+import { Magnetometer } from 'expo-sensors'; // Correct import
+import Svg, { Polygon, Line } from 'react-native-svg'; // Correct import
 
 const { width, height } = Dimensions.get('window');
 
@@ -19,7 +19,6 @@ export default function ARNavigationScreen({ route }) {
   // Request camera and location permissions
   useEffect(() => {
     (async () => {
-      // Request camera permissions
       const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
       if (cameraStatus !== 'granted') {
         Alert.alert(
@@ -32,7 +31,6 @@ export default function ARNavigationScreen({ route }) {
         );
       }
 
-      // Request location permissions
       const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
       if (locationStatus !== 'granted') {
         Alert.alert(
@@ -45,7 +43,6 @@ export default function ARNavigationScreen({ route }) {
         );
       }
 
-      // Update the permission state
       setHasPermission(cameraStatus === 'granted' && locationStatus === 'granted');
     })();
   }, []);
