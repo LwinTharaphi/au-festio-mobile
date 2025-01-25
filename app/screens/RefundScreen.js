@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Alert, Image, TouchableOpacity } from 'react-na
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Import the icon library
+import { uploadFile, deleteImage } from '../services/aws';
+import { AWS_BUCKET_NAME, AWS_REGION } from '@env';
 
 const RefundScreen = ({ route }) => {
   const { refundPercentage, studentId, organizerId, eventId } = route.params;
@@ -28,11 +30,16 @@ const RefundScreen = ({ route }) => {
     });
 
     if (!result.canceled) {
-      setQrImage(result.assets[0].uri); // Use `result.assets[0].uri` to get the image URI
+      setQrImage(result.assets[0]); // Use `result.assets[0].uri` to get the image URI
+      console.log("Refund qr",result.assets[0])
     } else {
       Alert.alert('Cancelled', 'No image was selected.');
     }
   };
+
+  const removeImage = () => {
+    setQrImage(null);
+  }
 
   /// Function to handle submission
 const handleSubmit = async () => {
@@ -44,6 +51,18 @@ const handleSubmit = async () => {
   setIsSubmitting(true);
 
   try {
+    let imageUrl = null;
+    if (qrImage) {
+      console.log('Uploading image:', qrImage);
+      const selectedImage = qrImage;
+      const fileName = selectedImage.uri.split('/').pop();
+      imageUrl = await uploadFile(selectedImage, fileName, 'RefundReceipts');
+      if (imageUrl) {
+        console.log('Image uploaded successfully:', imageUrl);
+      } else {
+        Alert.alert('Error', 'Failed to upload image. Please try again.');
+      }
+    }
     //update the student record with refund status
     const responseUpdateStudent = await fetch(
       `https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/${studentId}`,
@@ -52,7 +71,7 @@ const handleSubmit = async () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ refundStatus: 'requested' }),
+        body: JSON.stringify({ refundStatus: 'requested', refundQRCode: imageUrl }),
       }
     );
     const result = await responseUpdateStudent.json();
@@ -118,10 +137,16 @@ return (
       </TouchableOpacity>
 
       {qrImage ? (
-        <Image source={{ uri: qrImage }} style={styles.imagePreview} />
-      ) : (
-        <Text style={styles.errorText}>No image uploaded</Text>
-      )}
+          <View>
+            <Image source={{ uri: qrImage.uri }} style={styles.imagePreview} />
+            {/* Remove Image button */}
+            <TouchableOpacity onPress={removeImage} style={styles.removeButton}>
+              <Text style={styles.removeButtonText}>Remove Image</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <Text style={styles.errorText}>No image uploaded</Text>
+        )}
     </View>
 
     <TouchableOpacity
@@ -175,6 +200,17 @@ imagePreview: {
   height: 200,
   marginTop: 10,
   borderRadius: 10,
+},
+removeButton: {
+  marginTop: 10,
+  backgroundColor: '#f44336',
+  paddingVertical: 8,
+  paddingHorizontal: 15,
+  borderRadius: 5,
+},
+removeButtonText: {
+  color: '#fff',
+  fontWeight: 'bold',
 },
 errorText: {
   marginTop: 10,
