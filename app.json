@@ -17,7 +17,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.reactnativejs.au-festio-mobile",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to enable AR navigation.",
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to provide navigation guidance."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +29,12 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.reactnativejs.au_festio_mobile",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",

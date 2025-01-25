@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Button } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Button, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 
 export default function LocationScreen({ navigation }) {
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [initialRegion, setInitialRegion] = useState({
+    latitude: 13.611652749054086,
+    longitude: 100.83792247449529,
+    latitudeDelta: 0.005,
+    longitudeDelta: 0.005,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
 
   const markers = [
     { id: 1, name: 'CL Building', latitude: 13.611652749054086, longitude: 100.83792247449529 },
@@ -42,16 +51,38 @@ export default function LocationScreen({ navigation }) {
   ];
 
 
+   // Fetch user's current location
+   useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.error('Permission to access location was denied');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      setInitialRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      });
+    })();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <MapView
         style={styles.map}
-        initialRegion={{
-          latitude: 13.611652749054086, // Assumption University coordinates
-          longitude: 100.83792247449529,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        }}
+        initialRegion={initialRegion}
         onPress={(e) => setSelectedLocation(e.nativeEvent.coordinate)}
       >
         {markers.map((marker) => (
@@ -62,7 +93,13 @@ export default function LocationScreen({ navigation }) {
               longitude: marker.longitude,
             }}
             title={marker.name}
-            onCalloutPress={() => navigation.navigate('ARNavigation', { destination: marker })}
+            onCalloutPress={() => {
+              if (marker.latitude && marker.longitude) {
+                navigation.navigate('ARNavigation', { destination: marker });
+              } else {
+                console.error('Invalid marker coordinates:', marker);
+              }
+            }}
           />
         ))}
       </MapView>
@@ -79,4 +116,9 @@ export default function LocationScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

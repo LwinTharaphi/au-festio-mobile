@@ -38,6 +38,7 @@
     "expo-auth-session": "~6.0.2",
     "expo-blur": "~14.0.2",
     "expo-build-properties": "~0.13.2",
+    "expo-camera": "~16.0.14",
     "expo-constants": "~17.0.4",
     "expo-crypto": "~14.0.2",
     "expo-dev-client": "~5.0.10",
@@ -47,8 +48,10 @@
     "expo-haptics": "~14.0.1",
     "expo-image-picker": "~16.0.4",
     "expo-linking": "~7.0.4",
+    "expo-location": "~18.0.5",
     "expo-media-library": "~17.0.5",
     "expo-router": "~4.0.17",
+    "expo-sensors": "~14.0.2",
     "expo-splash-screen": "~0.29.21",
     "expo-status-bar": "~2.0.1",
     "expo-symbols": "~0.2.1",
@@ -86,8 +89,7 @@
     "react-native-webview": "13.12.5",
     "react-redux": "^9.2.0",
     "socket.io-client": "^4.8.1",
-    "tailwindcss": "^3.4.17",
-    "undefined": "link:expo-auth-session/providers/google"
+    "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
