@@ -15,7 +15,8 @@ import {
   Modal,
   TextInput,
   Alert,
-  ScrollView
+  ScrollView,
+  Platform
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -112,28 +113,11 @@ export default function EventDetailScreen({ route }) {
       const selectedImage = result.assets[0];
       console.log('Image uploaded:', result.assets[0]);
       setFormData({ ...formData, paymentScreenshot: selectedImage });
-
-      // const fileName = selectedImage.uri.split('/').pop();
-      // const imageUrl = await uploadFile(selectedImage, fileName, 'PaymentReceipts');
-      // if (imageUrl) {
-      //   console.log('Image uploaded successfully:', imageUrl);
-      //   setFormData({ ...formData, paymentScreenshot: imageUrl});
-      // } else {
-      //   Alert.alert('Error', 'Failed to upload image. Please try again.');
-      // }
     }
   };
 
   const removeImage = async () => {
     setFormData({ ...formData, paymentScreenshot: null });
-    // if(formData.paymentScreenshot) {
-    //   const deleteSuccess = await deleteImage(formData.paymentScreenshot);
-    //   if (deleteSuccess) {
-    //     setFormData({ ...formData, paymentScreenshot: null });
-    //   } else {
-    //     Alert.alert('Error', 'Failed to delete image. Please try again.');
-    //   }
-    // }
   };
 
   const handleImageClick = () => {
@@ -469,24 +453,28 @@ export default function EventDetailScreen({ route }) {
           transparent={true}
           onRequestClose={() => setModalVisible(false)}
         >
-          <ScrollView contentContainerStyle={{ flexGrow: 0.5, height: '100%' }}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Register for Event</Text>
+                
                 <TextInput
                   placeholder="ID"
+                  placeholderTextColor="#AAA"
                   style={styles.input}
                   value={formData.sid}
                   onChangeText={(text) => setFormData({ ...formData, sid: text })}
                 />
                 <TextInput
                   placeholder="Name"
+                  placeholderTextColor="#AAA"
                   style={styles.input}
                   value={formData.name}
                   onChangeText={(text) => setFormData({ ...formData, name: text })}
                 />
                 <TextInput
                   placeholder="Email"
+                  placeholderTextColor="#AAA"
                   style={styles.input}
                   keyboardType="email-address"
                   value={formData.email}
@@ -510,6 +498,7 @@ export default function EventDetailScreen({ route }) {
 
                 <TextInput
                   placeholder="Phone"
+                  placeholderTextColor="#AAA"
                   style={styles.input}
                   keyboardType="phone-pad"
                   value={formData.phone}
@@ -711,6 +700,7 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: '100%',
+    color: '#AAA'
   },
   buttonContainer: {
     flexDirection: 'row',

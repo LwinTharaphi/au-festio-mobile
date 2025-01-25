@@ -12,7 +12,7 @@ export default function EventDetailTabs({ route }) {
   const { organizerId,eventId } = route.params; // Get eventId from route params
   
   return (
-    <Tab.Navigator>
+    <Tab.Navigator screenOptions={{headerShown: false}}>
       <Tab.Screen
         name="Details"
         component={EventDetailScreen}

@@ -47,10 +47,8 @@ export default function AppNavigator({user}) {
       <Stack.Navigator screenOptions={{headerShown: false}} initialRouteName='MainTabs'>
         <Stack.Screen name="MainTabs" component={MainTabNavigator} initialParams={{user}}/>
         <Stack.Screen options={{presentation: 'modal'}} name="EventDetail" component={EventDetailScreen} />
-        <Stack.Screen options={{ presentation: 'modal' }} name="RegistrationSuccess" component={RegistrationSuccessScreen}
-      />
-      <Stack.Screen options={{ presentation: 'modal' }} name="Refund" component={RefundScreen}
-      />
+        <Stack.Screen options={{ presentation: 'modal' }} name="RegistrationSuccess" component={RegistrationSuccessScreen}/>
+        <Stack.Screen options={{ presentation: 'modal' }} name="Refund" component={RefundScreen}/>
       </Stack.Navigator>
     )
   } else {
