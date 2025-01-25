@@ -88,6 +88,14 @@ export default function ARNavigationScreen({ route }) {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         console.error('Location permission denied');
+        Alert.alert(
+          'Permission Required',
+          'This app needs location permissions to function properly.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
         return;
       }
 
