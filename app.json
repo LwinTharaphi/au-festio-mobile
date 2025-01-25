@@ -20,7 +20,9 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses the camera to enable AR navigation.",
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to provide navigation guidance."
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to provide navigation guidance.",
+        "NSUSERTRACKINGUSAGEDESCRIPTION": "This app uses your data to provide a better user experience.",
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -33,7 +35,8 @@
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "NOTIFICATIONS"
       ]
     },
     "web": {
@@ -42,6 +45,15 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./local/assets/notification_icon.png",
+          "color": "#ffffff",
+          "defaultChannel": "default",
+          "enableBackgroundRemoteNotifications": false
+        }
+      ],
       "expo-router",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
