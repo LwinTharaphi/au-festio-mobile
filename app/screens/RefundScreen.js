@@ -91,31 +91,25 @@ const handleSubmit = async () => {
       }
 
     // create a new refund record
-    // const formDataForRefund = new FormData();
-    // formDataForRefund.append('studentId', studentId);
-    // formDataForRefund.append('eventId', eventId);
-    // formDataForRefund.append('refundPercentage', refundPercentage);
-    // formDataForRefund.append('qrImage', {
-    //   uri: qrImage,
-    //   name: `qr-code-${studentId}.jpg`,
-    //   type: 'image/jpeg',
-    // });
+    const responseCreateRefund = await fetch(
+      `https://au-festio.vercel.app/api/${studentId}/refund`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          studentId,
+          refundPercentage,
+        }),
+      }
+    );
 
-    // const responseCreateRefund = await fetch(
-    //   `https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/${studentId}/refund`,
-    //   {
-    //     method: 'POST',
-    //     body: formDataForRefund,
-    //   }
-    // );
+    const resultCreateRefund = await responseCreateRefund.json();
 
-    // const resultCreateRefund = await responseCreateRefund.json();
-
-    // if (responseCreateRefund.ok) {
-    //   Alert.alert('Success', 'Your QR code has been uploaded and refund status updated.');
-    // } else {
-    //   throw new Error(resultCreateRefund.message || 'Failed to create refund record');
-    // }
+    if (!responseCreateRefund.ok) {
+      throw new Error(resultCreateRefund.message || 'Failed to create refund record');
+    }
 
   } catch (error) {
     Alert.alert('Error', error.message || 'Failed to submit. Please try again.');
@@ -123,8 +117,6 @@ const handleSubmit = async () => {
     setIsSubmitting(false);
   }
 };
-
-  
 
 return (
   <View style={styles.container}>
