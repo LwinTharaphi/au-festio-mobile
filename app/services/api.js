@@ -10,7 +10,7 @@ export async function fetchEvents(firebaseUserId, page = 1, limit = 10) {
         const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizer._id}/events`);
         if (!response.ok) throw new Error(`Failed to fetch events for organizer ${organizer._id}`);
         const organizerEvents = await response.json();
-        console.log("OrganizerEvents",organizerEvents);
+        // console.log("OrganizerEvents",organizerEvents);
         if (!Array.isArray(organizerEvents.events) || organizerEvents.events.length === 0) {
           console.log(`No events found for organizer ${organizer.name}`);
           return [];
@@ -44,7 +44,7 @@ export async function fetchEventByFirebaseUserId(organizerId, eventId, firebaseU
     const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`);
     if (!response.ok) throw new Error('Failed to fetch event students');
     const students = await response.json();
-    console.log("students",students);
+    // console.log("students",students);
 
     // Ensure students array exists and is an array
     return Array.isArray(students) && students.some((student) => student.firebaseUID === firebaseUserId);

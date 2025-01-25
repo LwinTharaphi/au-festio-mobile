@@ -24,6 +24,10 @@ export default function EventsScreen({ navigation }) {
       setFirebaseUserId(firebaseUser.uid);
     }
 
+    if (events.length>0) {
+      scheduleNotifications(events);
+    }
+
     const socket = io('https://au-festio.vercel.app');
     console.log('Socket:', socket);
 
@@ -36,7 +40,7 @@ export default function EventsScreen({ navigation }) {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [events]);
 
   useFocusEffect(
     useCallback(() => {
@@ -89,6 +93,33 @@ export default function EventsScreen({ navigation }) {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const scheduleNotifications = async (events) => {
+    for (const event of events) {
+      if (event.isRegistered) {
+        const eventDate = new Date(event.eventDate);
+        const currentDate = new Date();
+        
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Event Reminder',
+            body: `Event ${event.name} is scheduled for today at ${eventDate.toLocaleTimeString()}`,
+            data: { eventId: event._id },
+          },
+          trigger: eventDate,
+        });
+
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Event Reminder',
+            body: `The event ${event.name} has ended. Please provide your feedback.`,
+            data: { eventId: event._id },
+          },
+          trigger: endTime,
+        });  
+      }
     }
   };
 
