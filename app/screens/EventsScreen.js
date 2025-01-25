@@ -7,8 +7,11 @@ import { colors } from '../theme';
 import { auth } from '../config/firebase';
 import io from 'socket.io-client';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
 
-export default function EventsScreen({ navigation }) {
+
+export default function EventsScreen({ navigation, route }) {
+  const { expoPushToken } = route.params || {};
   const [events, setEvents] = useState([]);
   const [tab, setTab] = useState('registered');
   const [firebaseUserId, setFirebaseUserId] = useState(null);
@@ -24,12 +27,8 @@ export default function EventsScreen({ navigation }) {
       setFirebaseUserId(firebaseUser.uid);
     }
 
-    if (events.length>0) {
-      scheduleNotifications(events);
-    }
-
     const socket = io('https://au-festio.vercel.app');
-    console.log('Socket:', socket);
+    // console.log('Socket:', socket);
 
     socket.on('eventDataUpdated', () => {
       console.log('Socket connected:', socket.id);
@@ -78,7 +77,7 @@ export default function EventsScreen({ navigation }) {
         const uniqueEvents = filteredAndSortedEvents.filter((event, index, self) =>
           index === self.findIndex((e) => e._id === event._id)
         );
-        console.log("uniqueEvents",uniqueEvents);
+        // console.log("uniqueEvents",uniqueEvents);
         if (uniqueEvents.length === 0) {
           setHasMore(false);
         } else {
@@ -96,37 +95,85 @@ export default function EventsScreen({ navigation }) {
     }
   };
 
-  const scheduleNotifications = async (events) => {
-    for (const event of events) {
-      if (event.isRegistered) {
-        const eventDate = new Date(event.eventDate);
-        const currentDate = new Date();
+  // const scheduleNotifications = async () => {
+  //   const currentTime = new Date();
+  //   for (const event of events) {
+  //     if (event.isRegistered) {
+  //       console.log('Event:', event.eventName, event.eventDate, event.endTime);
+  //       const eventDate = new Date(event.eventDate);
+  //       const endTime = new Date(event.endTime);
         
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Event Reminder',
-            body: `Event ${event.name} is scheduled for today at ${eventDate.toLocaleTimeString()}`,
-            data: { eventId: event._id },
-          },
-          trigger: eventDate,
-        });
+  //       if (currentTime >= endTime){
+  //         await Notifications.scheduleNotificationAsync({
+  //           content: {
+  //             title: 'Event Reminder',
+  //             body: `Event ${event.eventName} has ended. Please provide your feedback.`,
+  //             data: { eventId: event._id },
+  //           },
+  //           trigger: { seconds: 5 },
+  //         });
+  //         console.log('Notification scheduled for event end:', event.eventName);
+  //       }
+  //     }
+  //   }
+  // };
 
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: 'Event Reminder',
-            body: `The event ${event.name} has ended. Please provide your feedback.`,
-            data: { eventId: event._id },
-          },
-          trigger: endTime,
-        });  
-      }
+  useEffect(() => {
+    if (expoPushToken && events.length > 0) {
+      events.forEach((event) => {
+        const eventDate = new Date(event.eventDate);
+        const endTime = new Date(event.endTime);
+        const currentDate = new Date();
+
+        if (event.isRegistered && eventDate > currentDate) {
+          const scheduleNotification = async () => {
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: 'Event Reminder',
+                body: `Event ${event.eventName} is about to start.`,
+                data: { eventId: event._id },
+              },
+              trigger: { date: eventDate, seconds: 5 },
+            });
+            console.log('Notification scheduled for event start:', event.eventName);
+            if (endTime > currentDate) {
+              await Notifications.scheduleNotificationAsync({
+                content: {
+                  title: 'Event Reminder',
+                  body: `Event ${event.eventName} has ended. Please provide your feedback.`,
+                  data: { eventId: event._id },
+                },
+                trigger: { seconds: 5, date: endTime },
+              });
+              console.log('Notification scheduled for event end:', event.eventName);
+            }
+
+          };
+          scheduleNotification();
+        }
+      });
     }
-  };
+  }, [events, expoPushToken]);
 
   const filteredEvents = events.filter((event) => (tab === 'registered' ? event.isRegistered : !event.isRegistered));
 
   // Disable infinite scrolling when all events are loaded
   const shouldLoadMore = hasMore && !loading;
+
+  useEffect(() => {
+    const notificationSubscription = Notifications.addNotificationReceivedListener((notification) => {
+      console.log('Notification received:', notification);
+    });
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const { eventId } = response.notification.request.content.data;
+      console.log('Notification response received:', response, eventId);
+      navigation.navigate('Notification', { eventId });
+    });
+    return () => {
+      notificationSubscription.remove();
+      subscription.remove();
+    };
+  }, [navigation]);
 
   return (
     <View style={styles.container}>

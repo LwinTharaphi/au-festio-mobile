@@ -10,10 +10,11 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 export default function EventStackNavigator({route,navigation}) {
+  const { expoPushToken, notification } = route.params || {};
   return (
     <Stack.Navigator>
-      <Stack.Screen name="EventLists" component={EventsScreen} options={{headerShown: false, tabBarStyle: {display: 'none'}}} />
-      <Stack.Screen name="Notification" component={NotificationScreen} options={{headerShown: false, tabBarStyle: {display: 'none'}}} />
+      <Stack.Screen name="EventLists" component={EventsScreen} initialParams={{expoPushToken}} options={{headerShown: false, tabBarStyle: {display: 'none'}}} />
+      <Stack.Screen name="Notification" component={NotificationScreen} initialParams={{notification}} options={{headerShown: false, tabBarStyle: {display: 'none'}}} />
       <Stack.Screen
         name="EventDetail"
         component={EventDetailTabs}

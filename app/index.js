@@ -11,13 +11,15 @@ import { onAuthStateChanged } from 'firebase/auth';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
+import { useNavigation } from '@react-navigation/native';
+import NotificationScreen from './screens/NotificationScreen';
 // import { Provider } from 'react-redux';
 // import { store } from './redux/store';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: false,
+    shouldPlaySound: true,
     shouldSetBadge: true,
   }),
 });
@@ -57,8 +59,6 @@ export default function App() {
   const [expoPushToken, setExpoPushToken] = React.useState('');
   const [channels, setChannels] = React.useState([]);
   const [notification, setNotification] = React.useState(undefined);
-  const notificationListener = React.useRef();
-  const responseListener = React.useRef();  
   useEffect(() => {
     const prepareApp = async () => {
       SplashScreen.preventAutoHideAsync();
@@ -67,28 +67,12 @@ export default function App() {
       SplashScreen.hideAsync();
     }
     registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
-    if (Platform.OS === 'android') {
-      Notifications.getNotificationChannelsAsync().then(channels => setChannels(channels));
-      notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-        setNotification(notification);
-      });
-      responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-        console.log("Notification response received:", response);
-      });
-    }
+
     prepareApp();
-    return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
-    };
   }, []);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('User state changed:', user);
+      // console.log('User state changed:', user);
       if (user) {
         await user.reload();
         console.log('Updated displayName after reload:', user.displayName);
@@ -116,7 +100,7 @@ export default function App() {
   }
   return (
     <SafeAreaProvider>
-      <AppNavigator user={user} /> 
+      <AppNavigator user={user} expoPushToken={expoPushToken} notification={notification}/> 
     
     </SafeAreaProvider>
   );
