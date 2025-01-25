@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Platform, Dimensions, Alert, Linking, Button } from 'react-native';
-import { Camera } from 'expo-camera'; // Correct import
-import * as Location from 'expo-location'; // Correct import
-import { Magnetometer } from 'expo-sensors'; // Correct import
-import Svg, { Polygon, Line } from 'react-native-svg'; // Correct import
+import { Camera } from 'expo-camera';
+import * as Location from 'expo-location';
+import { Magnetometer } from 'expo-sensors';
+import Svg, { Polygon, Line } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
 
@@ -14,13 +14,13 @@ export default function ARNavigationScreen({ route }) {
   const [heading, setHeading] = useState(0);
   const [location, setLocation] = useState(null);
   const [magnetometerData, setMagnetometerData] = useState({ x: 0, y: 0, z: 0 });
-  const [cameraReady, setCameraReady] = useState(false);
 
-  // Request camera and location permissions
   useEffect(() => {
     (async () => {
+      // Request camera permissions
       const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
       if (cameraStatus !== 'granted') {
+        console.error('Camera permission denied');
         Alert.alert(
           'Camera Permission Required',
           'This app needs camera permissions to enable AR features. Please enable it in settings.',
@@ -30,9 +30,11 @@ export default function ARNavigationScreen({ route }) {
           ]
         );
       }
-
+  
+      // Request location permissions
       const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
       if (locationStatus !== 'granted') {
+        console.error('Location permission denied');
         Alert.alert(
           'Location Permission Required',
           'This app needs location permissions to provide navigation. Please enable it in settings.',
@@ -42,7 +44,8 @@ export default function ARNavigationScreen({ route }) {
           ]
         );
       }
-
+  
+      // Update the permission state
       setHasPermission(cameraStatus === 'granted' && locationStatus === 'granted');
     })();
   }, []);
@@ -92,6 +95,7 @@ export default function ARNavigationScreen({ route }) {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
+        console.error('Location permission denied');
         Alert.alert(
           'Permission Required',
           'This app needs location permissions to function properly.',
@@ -113,7 +117,6 @@ export default function ARNavigationScreen({ route }) {
         );
       } catch (error) {
         console.error('Error watching location:', error);
-        Alert.alert('Error', 'Unable to track your location. Please try again later.');
       }
     })();
 
@@ -169,43 +172,38 @@ export default function ARNavigationScreen({ route }) {
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Camera
-        style={StyleSheet.absoluteFill}
-        onCameraReady={() => setCameraReady(true)}
-      />
+      <Camera style={StyleSheet.absoluteFill} />
       
       {/* AR Overlay */}
-      {cameraReady && (
-        <View style={styles.overlay}>
-          <Svg style={styles.arrowContainer}>
-            {/* Direction arrow */}
-            <Polygon
-              points="0,-50 40,0 0,50 -40,0"
-              fill="rgba(255,0,0,0.8)"
-              transform={`rotate(${arrowRotation})`}
-            />
-            
-            {/* Horizon line */}
-            <Line
-              x1={0}
-              y1={height / 2}
-              x2={width}
-              y2={height / 2}
-              stroke="rgba(255,255,255,0.5)"
-              strokeWidth="2"
-            />
-          </Svg>
+      <View style={styles.overlay}>
+        <Svg style={styles.arrowContainer}>
+          {/* Direction arrow */}
+          <Polygon
+            points="0,-50 40,0 0,50 -40,0"
+            fill="rgba(255,0,0,0.8)"
+            transform={`rotate(${arrowRotation})`}
+          />
           
-          <View style={styles.infoPanel}>
-            <Text style={styles.distanceText}>
-              {distance.toFixed(1)} meters to destination
-            </Text>
-            <Text style={styles.directionText}>
-              Bearing: {Math.round(bearing)}° | Heading: {Math.round(heading)}°
-            </Text>
-          </View>
+          {/* Horizon line */}
+          <Line
+            x1={0}
+            y1={height / 2}
+            x2={width}
+            y2={height / 2}
+            stroke="rgba(255,255,255,0.5)"
+            strokeWidth="2"
+          />
+        </Svg>
+        
+        <View style={styles.infoPanel}>
+          <Text style={styles.distanceText}>
+            {distance.toFixed(1)} meters to destination
+          </Text>
+          <Text style={styles.directionText}>
+            Bearing: {Math.round(bearing)}° | Heading: {Math.round(heading)}°
+          </Text>
         </View>
-      )}
+      </View>
     </View>
   );
 }

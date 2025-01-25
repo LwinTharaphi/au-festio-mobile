@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Alert, Linking, Button } from 'react-native';
+import { StyleSheet, View, Button, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 
@@ -11,7 +11,8 @@ export default function LocationScreen({ navigation }) {
     latitudeDelta: 0.005,
     longitudeDelta: 0.005,
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+
 
   const markers = [
     { id: 1, name: 'CL Building', latitude: 13.611652749054086, longitude: 100.83792247449529 },
@@ -19,7 +20,7 @@ export default function LocationScreen({ navigation }) {
     { id: 3, name: 'Sala Chaturamuk Phaichit', latitude: 13.611730645797293, longitude: 100.83879029400991 },
     { id: 4, name: 'IT Building : Srisakdi Charmonman Building', latitude: 13.61181961688499, longitude: 100.83633391284009 },
     { id: 5, name: 'ABAC Car Park Building', latitude: 13.61184223622187, longitude: 100.83608464745402 },
-    { id: 6, name: 'Montfort del Rosario School of Architecture and Design (AR)', latitude: 13.611969897717735, longitude: 100.83554611219331 },
+    { id: 6, name: 'Montfort del Rosario School of Architecture and Design (AR)', latitude: 13.611969897717735, longitude: 100.83554611219331},
     { id: 7, name: 'Albert Laurence School of Communication Arts (CA)', latitude: 13.612205194998582, longitude: 100.83522757952385 },
     { id: 8, name: 'Martin de Tours School of Management and Economics (MSME)', latitude: 13.612698533211569, longitude: 100.83664996645814 },
     { id: 9, name: 'John Paul School of Medicine', latitude: 13.613185049535668, longitude: 100.83540288026663 },
@@ -48,8 +49,9 @@ export default function LocationScreen({ navigation }) {
     { id: 32, name: 'Outdoor Parking Lot', latitude: 13.615317913000434, longitude: 100.83485431364852 },
   ];
 
-  // Fetch user's current location
-  useEffect(() => {
+
+   // Fetch user's current location
+   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -62,24 +64,16 @@ export default function LocationScreen({ navigation }) {
             { text: 'Open Settings', onPress: () => Linking.openSettings() },
           ]
         );
-        setIsLoading(false);
         return;
       }
-
-      try {
-        const location = await Location.getCurrentPositionAsync({});
-        setInitialRegion({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        });
-      } catch (error) {
-        console.error('Error fetching location:', error);
-        Alert.alert('Error', 'Unable to fetch your current location. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
+  
+      const location = await Location.getCurrentPositionAsync({});
+      setInitialRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      });
     })();
   }, []);
 
