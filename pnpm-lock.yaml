@@ -230,6 +230,9 @@ importers:
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.17
+      undefined:
+        specifier: link:expo-auth-session/providers/google
+        version: link:expo-auth-session/providers/google
     devDependencies:
       '@babel/core':
         specifier: ^7.26.0
