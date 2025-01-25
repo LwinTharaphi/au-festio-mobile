@@ -469,7 +469,7 @@ export default function EventDetailScreen({ route }) {
           transparent={true}
           onRequestClose={() => setModalVisible(false)}
         >
-          <ScrollView contentContainerStyle={{ flexGrow: 0.5, height: '100%' }}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Register for Event</Text>
