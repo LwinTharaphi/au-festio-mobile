@@ -9,7 +9,7 @@ import { useNavigationState } from '@react-navigation/native';
 const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator({ route, navigation }) {
-  const { user } = route.params;
+  const { user, expoPushToken, notification } = route.params;
   const navigationState = useNavigationState((state) => state);
 
   const getNestedRouteName = (stage) => {
@@ -33,6 +33,7 @@ export default function MainTabNavigator({ route, navigation }) {
       <Tab.Screen
         name="Events"
         component={EventStackNavigator}
+        initialParams={{ expoPushToken, notification }}
         options={{
           headerShown: false,
           tabBarLabel: 'Events',

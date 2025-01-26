@@ -13,6 +13,8 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
 import NotificationScreen from './screens/NotificationScreen';
+import * as TaskManager from 'expo-task-manager';
+import * as BackgroundFetch from 'expo-background-fetch';
 // import { Provider } from 'react-redux';
 // import { store } from './redux/store';
 
@@ -23,6 +25,34 @@ Notifications.setNotificationHandler({
     shouldSetBadge: true,
   }),
 });
+
+const BACKGROUND_TASK = 'background-notification-fetch';
+
+TaskManager.defineTask(BACKGROUND_TASK, async () => {
+  console.log('Background task executed');
+  try {
+    await scheduleNotificationAsync();
+    return BackgroundFetch.Result.NewData;
+  } catch (error) {
+    console.error('Failed to fetch notifications:', error);
+    return BackgroundFetch.Result.Failed;
+  }
+});
+
+const registerBackgroundFetch = async () => {
+  const status = await BackgroundFetch.getStatusAsync();
+  if (status === BackgroundFetch.Status.Available) {
+    console.log('Background fetch is available');
+    await BackgroundFetch.registerTaskAsync(BACKGROUND_TASK, {
+      minimumInterval: 15 * 60, // 15 minute
+      stopOnTerminate: false,
+      startOnBoot: true,
+    });
+    console.log('Background fetch registered');
+  } else {
+    console.log('Background fetch is not available:', status);
+  }
+}
 
 export async function registerForPushNotificationsAsync() {
   let token;
@@ -59,6 +89,9 @@ export default function App() {
   const [expoPushToken, setExpoPushToken] = React.useState('');
   const [channels, setChannels] = React.useState([]);
   const [notification, setNotification] = React.useState(undefined);
+  const notificationListener = React.useRef();
+  const responseListener = React.useRef();
+
   useEffect(() => {
     const prepareApp = async () => {
       SplashScreen.preventAutoHideAsync();
@@ -67,8 +100,29 @@ export default function App() {
       SplashScreen.hideAsync();
     }
     registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
+    registerBackgroundFetch();
+
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      setNotification(notification);
+      console.log("Notification received: ", notification);
+    });
+
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log("Notification response received: ", response);
+      const { eventId } = response.notification.request.content.data;
+      console.log("Event ID: ", eventId);
+    });
 
     prepareApp();
+    return () => {
+      if (notificationListener.current) {
+        Notifications.removeNotificationSubscription(notificationListener.current);
+      }
+
+      if (responseListener.current) {
+        Notifications.removeNotificationSubscription(responseListener.current);
+      }
+    }
   }, []);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

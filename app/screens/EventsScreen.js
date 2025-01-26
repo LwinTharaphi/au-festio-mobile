@@ -8,6 +8,7 @@ import { auth } from '../config/firebase';
 import io from 'socket.io-client';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
+// import { setShouldAnimateExitingForTag } from 'react-native-reanimated/lib/typescript/core';
 
 
 export default function EventsScreen({ navigation, route }) {
@@ -19,6 +20,7 @@ export default function EventsScreen({ navigation, route }) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isRegisteredUpdated, setIsRegisteredUpdated] = useState(false);
+  const [scheduleNotifications, setScheduleNotifications] = useState(new Set());
 
   useEffect(() => {
     const firebaseUser = auth.currentUser;
@@ -95,63 +97,69 @@ export default function EventsScreen({ navigation, route }) {
     }
   };
 
-  // const scheduleNotifications = async () => {
-  //   const currentTime = new Date();
-  //   for (const event of events) {
-  //     if (event.isRegistered) {
-  //       console.log('Event:', event.eventName, event.eventDate, event.endTime);
-  //       const eventDate = new Date(event.eventDate);
-  //       const endTime = new Date(event.endTime);
-        
-  //       if (currentTime >= endTime){
-  //         await Notifications.scheduleNotificationAsync({
-  //           content: {
-  //             title: 'Event Reminder',
-  //             body: `Event ${event.eventName} has ended. Please provide your feedback.`,
-  //             data: { eventId: event._id },
-  //           },
-  //           trigger: { seconds: 5 },
-  //         });
-  //         console.log('Notification scheduled for event end:', event.eventName);
-  //       }
-  //     }
-  //   }
-  // };
+  const scheduleNotificationsLogic = async () => {
+    const currentTime = new Date();
+    console.log('Current time:', currentTime);
+    const currentDate = currentTime.toISOString().split('T')[0];
+    const currentHours = currentTime.getHours();
+    const currentMinutes = currentTime.getMinutes();
+    console.log('Current date:', currentDate);
+    console.log('Current time:', currentHours, currentMinutes);
+
+    for (const event of events) {
+      if (event.isRegistered) {
+        console.log('Event:', event.eventName, event.eventDate, event.endTime);
+        const eventDate = new Date(event.eventDate).toISOString().split('T')[0];
+        const endTime = event.endTime
+        const startTime = event.startTime
+        const [startHours, startMinutes] = startTime.split(':').map(Number);
+        const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+        const notificationStartTime = new Date(event.eventDate);
+        notificationStartTime.setHours(startHours, startMinutes-5);
+
+        const notificationEndTime = new Date(event.eventDate);
+        notificationEndTime.setHours(endHours, endMinutes+5);
+        console.log('Event date:', eventDate);
+        console.log('Event end time:', endTime);
+        console.log('Event end time+ 5 minutes:', notificationEndTime.toLocaleTimeString());
+        console.log('Event start time:', startTime);
+        console.log('Event start time-5 minutes:', notificationStartTime.toLocaleTimeString(),notificationStartTime.getHours(),notificationStartTime.getMinutes());
+        console.log('Current time:', currentTime.toLocaleTimeString());
+
+        // Schedule notification for event start
+        if (eventDate === currentDate && notificationStartTime.getHours() === currentHours && notificationStartTime.getMinutes() === currentMinutes) {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Event Reminder',
+              body: `Event ${event.eventName} is about to start!`,
+              data: { eventId: event._id },
+            },
+            trigger: { date: notificationStartTime },
+          });
+          console.log('Notification scheduled for event start:', event.eventName);
+        }
+
+        // Schedule notification for event end
+        if (eventDate === currentDate && notificationEndTime.getHours() === currentHours && notificationEndTime.getMinutes() === currentMinutes) {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: 'Event Reminder',
+              body: `Event ${event.eventName} is about to end!`,
+              data: { eventId: event._id },
+            },
+            trigger: { date: notificationEndTime },
+          });
+          console.log('Notification scheduled for event end:', event.eventName);
+        }
+        setScheduleNotifications((prevNotifications) => new Set([...prevNotifications, event._id]));
+      }
+    }
+  };
 
   useEffect(() => {
     if (expoPushToken && events.length > 0) {
-      events.forEach((event) => {
-        const eventDate = new Date(event.eventDate);
-        const endTime = new Date(event.endTime);
-        const currentDate = new Date();
-
-        if (event.isRegistered && eventDate > currentDate) {
-          const scheduleNotification = async () => {
-            await Notifications.scheduleNotificationAsync({
-              content: {
-                title: 'Event Reminder',
-                body: `Event ${event.eventName} is about to start.`,
-                data: { eventId: event._id },
-              },
-              trigger: { date: eventDate, seconds: 5 },
-            });
-            console.log('Notification scheduled for event start:', event.eventName);
-            if (endTime > currentDate) {
-              await Notifications.scheduleNotificationAsync({
-                content: {
-                  title: 'Event Reminder',
-                  body: `Event ${event.eventName} has ended. Please provide your feedback.`,
-                  data: { eventId: event._id },
-                },
-                trigger: { seconds: 5, date: endTime },
-              });
-              console.log('Notification scheduled for event end:', event.eventName);
-            }
-
-          };
-          scheduleNotification();
-        }
-      });
+      scheduleNotificationsLogic();
     }
   }, [events, expoPushToken]);
 
