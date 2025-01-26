@@ -19,10 +19,8 @@
       "bundleIdentifier": "com.reactnativejs.au-festio-mobile",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "NSCameraUsageDescription": "This app uses the camera to enable AR navigation.",
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to provide navigation guidance.",
-        "NSUSERTRACKINGUSAGEDESCRIPTION": "This app uses your data to provide a better user experience.",
-        "UIBackgroundModes": ["remote-notification"]
+        "NSCameraUsageDescription": "This app requires camera access to provide AR navigation.",
+        "NSLocationWhenInUseUsageDescription": "This app requires your location to provide navigation assistance."
       }
     },
     "android": {
@@ -30,13 +28,12 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.reactnativejs.au_festio_mobile",
+      "package": "com.reactnativejs.au.festio.mobile",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "NOTIFICATIONS"
+        "ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
