@@ -67,11 +67,12 @@ export default function LocationScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [directions, setDirections] = useState([]);
+  const [steps, setSteps] = useState([]);
   const [showDetails, setShowDetails] = useState(false);
   const [favorites, setFavorites] = useState([]);
-  const [showARNavigation, setShowARNavigation] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Loading state
+  const [showARNavigation, setShowARNavigation] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load favorites from AsyncStorage on component mount
   useEffect(() => {
@@ -127,7 +128,30 @@ export default function LocationScreen() {
   const handleMarkerPress = (marker) => {
     setSelectedMarker(marker);
     setShowDetails(true);
-    Keyboard.dismiss(); // Dismiss keyboard when a marker is pressed
+    Keyboard.dismiss();
+  };
+
+  const fetchRoute = async (start, end) => {
+    const url = `https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson`;
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.routes && data.routes.length > 0) {
+        const coordinates = data.routes[0].geometry.coordinates.map(coord => ({
+          latitude: coord[1],
+          longitude: coord[0],
+        }));
+        setDirections(coordinates);
+
+        // Extract steps for turn-by-turn directions
+        const steps = data.routes[0].legs[0].steps.map(step => step.maneuver.instruction);
+        setSteps(steps);
+      } else {
+        console.error('No route found');
+      }
+    } catch (error) {
+      console.error('Error fetching route:', error);
+    }
   };
 
   const calculateDirections = () => {
@@ -140,12 +164,13 @@ export default function LocationScreen() {
         latitude: selectedMarker.latitude,
         longitude: selectedMarker.longitude,
       };
-      setDirections([start, end]);
+      fetchRoute(start, end);
     }
   };
 
   const clearDirections = () => {
     setDirections([]);
+    setSteps([]);
   };
 
   const toggleFavorite = (marker) => {
@@ -159,12 +184,12 @@ export default function LocationScreen() {
   const handleARNavigation = () => {
     setShowARNavigation(true);
     setShowDetails(false);
-    Keyboard.dismiss(); // Dismiss keyboard when AR navigation is started
+    Keyboard.dismiss();
   };
 
   const handleShowFavorites = () => {
     setShowFavorites(true);
-    Keyboard.dismiss(); // Dismiss keyboard when showing favorites
+    Keyboard.dismiss();
   };
 
   const handleCloseFavorites = () => {
@@ -206,14 +231,14 @@ export default function LocationScreen() {
     <View style={styles.container}>
       {/* Search Bar */}
       <View style={styles.searchBar}>
-      <TextInput
-        style={[styles.searchInput, { color: 'black' }]} 
-        placeholder="Search locations..."
-        placeholderTextColor="gray" 
-        value={searchQuery}
-        onChangeText={handleSearch}
-      />
-        <Ionicons name="search" size={20} color="black"/>
+        <TextInput
+          style={[styles.searchInput, { color: 'black' }]}
+          placeholder="Search locations..."
+          placeholderTextColor="gray"
+          value={searchQuery}
+          onChangeText={handleSearch}
+        />
+        <Ionicons name="search" size={20} color="black" />
       </View>
 
       {/* Favorites Button */}
@@ -233,7 +258,7 @@ export default function LocationScreen() {
         }}
         showsUserLocation={true}
         followsUserLocation={true}
-        onPress={() => Keyboard.dismiss()} // Dismiss keyboard when map is pressed
+        onPress={() => Keyboard.dismiss()}
       >
         {filteredMarkers.map((marker) => (
           <Marker
@@ -241,7 +266,7 @@ export default function LocationScreen() {
             coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
             title={marker.name}
             onPress={() => handleMarkerPress(marker)}
-            pinColor={favorites.includes(marker.id) ? 'red' : 'blue'} // Custom marker color
+            pinColor={favorites.includes(marker.id) ? 'red' : 'blue'}
           />
         ))}
         {directions.length > 0 && (
@@ -269,6 +294,15 @@ export default function LocationScreen() {
             >
               <Text style={styles.directionsButtonText}>Get Directions</Text>
             </TouchableOpacity>
+            {steps.length > 0 && (
+              <FlatList
+                data={steps}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => (
+                  <Text style={styles.stepText}>{item}</Text>
+                )}
+              />
+            )}
             <TouchableOpacity
               style={styles.clearDirectionsButton}
               onPress={clearDirections}
@@ -368,7 +402,7 @@ const styles = StyleSheet.create({
   },
   favoritesButton: {
     position: 'absolute',
-    top: 100, // Positioned below the search bar
+    top: 100,
     left: 20,
     right: 20,
     flexDirection: 'row',
@@ -476,5 +510,9 @@ const styles = StyleSheet.create({
   removeAllButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  stepText: {
+    fontSize: 14,
+    marginVertical: 5,
   },
 });
