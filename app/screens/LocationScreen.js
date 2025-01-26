@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, TextInput, Text, TouchableOpacity, Modal, FlatList, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Dimensions, TextInput, Text, TouchableOpacity, Modal, FlatList, ActivityIndicator, Keyboard } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -127,6 +127,7 @@ export default function LocationScreen() {
   const handleMarkerPress = (marker) => {
     setSelectedMarker(marker);
     setShowDetails(true);
+    Keyboard.dismiss(); // Dismiss keyboard when a marker is pressed
   };
 
   const calculateDirections = () => {
@@ -158,10 +159,12 @@ export default function LocationScreen() {
   const handleARNavigation = () => {
     setShowARNavigation(true);
     setShowDetails(false);
+    Keyboard.dismiss(); // Dismiss keyboard when AR navigation is started
   };
 
   const handleShowFavorites = () => {
     setShowFavorites(true);
+    Keyboard.dismiss(); // Dismiss keyboard when showing favorites
   };
 
   const handleCloseFavorites = () => {
@@ -203,13 +206,14 @@ export default function LocationScreen() {
     <View style={styles.container}>
       {/* Search Bar */}
       <View style={styles.searchBar}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search locations..."
-          value={searchQuery}
-          onChangeText={handleSearch}
-        />
-        <Ionicons name="search" size={20} color="gray" />
+      <TextInput
+        style={[styles.searchInput, { color: 'black' }]} 
+        placeholder="Search locations..."
+        placeholderTextColor="gray" 
+        value={searchQuery}
+        onChangeText={handleSearch}
+      />
+        <Ionicons name="search" size={20} color="black"/>
       </View>
 
       {/* Favorites Button */}
@@ -229,6 +233,7 @@ export default function LocationScreen() {
         }}
         showsUserLocation={true}
         followsUserLocation={true}
+        onPress={() => Keyboard.dismiss()} // Dismiss keyboard when map is pressed
       >
         {filteredMarkers.map((marker) => (
           <Marker
