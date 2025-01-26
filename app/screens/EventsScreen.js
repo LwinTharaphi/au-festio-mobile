@@ -8,6 +8,7 @@ import { auth } from '../config/firebase';
 import io from 'socket.io-client';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // import { setShouldAnimateExitingForTag } from 'react-native-reanimated/lib/typescript/core';
 
 
@@ -97,6 +98,16 @@ export default function EventsScreen({ navigation, route }) {
     }
   };
 
+  const saveNotificationToStorage = async (notification) => {
+    try{
+      const storedNotifications = JSON.parse(await AsyncStorage.getItem('notifications')) || [];
+      const updatedNotifications = [notification, ...storedNotifications];
+      await AsyncStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+    } catch (error) {
+      console.error('Failed to save notification:', error);
+    }
+  };
+
   const scheduleNotificationsLogic = async () => {
     const currentTime = new Date();
     console.log('Current time:', currentTime);
@@ -132,11 +143,12 @@ export default function EventsScreen({ navigation, route }) {
           await Notifications.scheduleNotificationAsync({
             content: {
               title: 'Event Reminder',
-              body: `Todat is the day for event ${event.eventName}!`,
+              body: `Today is the day for event ${event.eventName}!`,
               data: { eventId: event._id },
             },
-            trigger: { date: notificationStartTime },
+            trigger: { date: eventDate },
           });
+          saveNotificationToStorage({ title: 'Event Reminder', body: `Today is the day for event ${event.eventName}!`, timestamp: currentTime.toLocaleTimeString(), data: { eventId: event._id } });
           console.log('Notification scheduled for event start:', event.eventName);
         }
 
@@ -144,12 +156,13 @@ export default function EventsScreen({ navigation, route }) {
         if (eventDate === currentDate && notificationEndTime.getHours() === currentHours && notificationEndTime.getMinutes() === currentMinutes) {
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: 'Event Reminder',
-              body: `Event ${event.eventName} is about to end!`,
+              title: 'Feedback Reminder',
+              body: `Event ${event.eventName} has ended. Please provide your feedback!`,
               data: { eventId: event._id },
             },
-            trigger: { date: notificationEndTime },
+            trigger: { date: notificationEndTime.toLocaleTimeString() },
           });
+          saveNotificationToStorage({ title: 'Feedback Reminder', body: `Event ${event.eventName} has ended. Please provide your feedback!`, timestamp: notificationStartTime.toLocaleTimeString(), data: { eventId: event._id } });
           console.log('Notification scheduled for event end:', event.eventName);
         }
         setScheduleNotifications((prevNotifications) => new Set([...prevNotifications, event._id]));
@@ -171,6 +184,7 @@ export default function EventsScreen({ navigation, route }) {
   useEffect(() => {
     const notificationSubscription = Notifications.addNotificationReceivedListener((notification) => {
       console.log('Notification received:', notification);
+      saveNotificationToStorage(notification.request.content);
     });
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const { eventId } = response.notification.request.content.data;

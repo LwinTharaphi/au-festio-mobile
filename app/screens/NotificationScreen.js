@@ -1,47 +1,62 @@
-// screens/NotificationScreen.js
+import React, { useEffect, useState } from 'react';
+import { View, FlatList, Text, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import React from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+export default function NotificationHistoryScreen() {
+  const [notifications, setNotifications] = useState([]);
 
-const NotificationScreen = ({ route }) => {
-  const { notifications } = route.params; // Get notifications passed via route params
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const storedNotifications = JSON.parse(await AsyncStorage.getItem('notifications')) || [];
+        setNotifications(storedNotifications);
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      }
+    };
+
+    loadNotifications();
+  }, []);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Notifications</Text>
+      <Text style={styles.header}>Notification History</Text>
       <FlatList
         data={notifications}
+        keyExtractor={(item, index) => `${index}`}
         renderItem={({ item }) => (
           <View style={styles.notificationItem}>
-            <Text style={styles.notificationTitle}>{item.title}</Text>
-            <Text>{item.body}</Text>
+            <Text style={styles.title}>{item.title}</Text>
+            <Text style={styles.body}>{item.body}</Text>
           </View>
         )}
-        keyExtractor={(item, index) => index.toString()}
       />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 20,
+    backgroundColor: '#fff',
   },
-  title: {
+  header: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   notificationItem: {
-    marginBottom: 12,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#f4f4f4',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
-  notificationTitle: {
+  title: {
+    fontSize: 18,
     fontWeight: 'bold',
   },
+  body: {
+    fontSize: 16,
+    color: '#555',
+  },
 });
-
-export default NotificationScreen;

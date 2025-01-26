@@ -14,6 +14,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "notification": {
+      "icon": "./assets/images/au_festio_logo.jpg",
+      "color": "#ffffff"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.reactnativejs.au-festio-mobile",
@@ -50,8 +54,8 @@
         {
           "icon": "./local/assets/notification_icon.png",
           "color": "#ffffff",
-          "defaultChannel": "default",
-          "enableBackgroundRemoteNotifications": false
+          // "defaultChannel": "default",
+          "enableBackgroundRemoteNotifications": true
         }
       ],
       "expo-router",
