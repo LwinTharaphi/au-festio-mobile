@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { View, StyleSheet, Dimensions, TextInput, Text, TouchableOpacity, Modal, FlatList } from 'react-native';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ARNavigation from './ARNavigation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -11,7 +14,7 @@ const markers = [
   { id: 3, name: 'Sala Chaturamuk Phaichit', latitude: 13.611730645797293, longitude: 100.83879029400991 },
   { id: 4, name: 'IT Building : Srisakdi Charmonman Building', latitude: 13.61181961688499, longitude: 100.83633391284009 },
   { id: 5, name: 'ABAC Car Park Building', latitude: 13.61184223622187, longitude: 100.83608464745402 },
-  { id: 6, name: 'Montfort del Rosario School of Architecture and Design (AR)', latitude: 13.611969897717735, longitude: 100.83554611219331 },
+  { id: 6, name: 'Montfort del Rosario School of Architecture and Design (AR)', latitude: 13.611969897717735, longitude: 100.83554611219331},
   { id: 7, name: 'Albert Laurence School of Communication Arts (CA)', latitude: 13.612205194998582, longitude: 100.83522757952385 },
   { id: 8, name: 'Martin de Tours School of Management and Economics (MSME)', latitude: 13.612698533211569, longitude: 100.83664996645814 },
   { id: 9, name: 'John Paul School of Medicine', latitude: 13.613185049535668, longitude: 100.83540288026663 },
@@ -41,9 +44,44 @@ const markers = [
   { id: 33, name: 'Outdoor Parking Lot', latitude: 13.615317913000434, longitude: 100.83485431364852 },
 ];
 
+
 export default function LocationScreen() {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [directions, setDirections] = useState([]);
+  const [showDetails, setShowDetails] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [showARNavigation, setShowARNavigation] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false); // State to toggle favorites modal
+
+  // Load favorites from AsyncStorage on component mount
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const savedFavorites = await AsyncStorage.getItem('favorites');
+        if (savedFavorites) {
+          setFavorites(JSON.parse(savedFavorites));
+        }
+      } catch (error) {
+        console.error('Failed to load favorites:', error);
+      }
+    };
+    loadFavorites();
+  }, []);
+
+  // Save favorites to AsyncStorage whenever they change
+  useEffect(() => {
+    const saveFavorites = async () => {
+      try {
+        await AsyncStorage.setItem('favorites', JSON.stringify(favorites));
+      } catch (error) {
+        console.error('Failed to save favorites:', error);
+      }
+    };
+    saveFavorites();
+  }, [favorites]);
 
   useEffect(() => {
     (async () => {
@@ -58,12 +96,93 @@ export default function LocationScreen() {
     })();
   }, []);
 
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+  };
+
+  const filteredMarkers = markers.filter((marker) =>
+    marker.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleMarkerPress = (marker) => {
+    setSelectedMarker(marker);
+    setShowDetails(true);
+  };
+
+  const calculateDirections = () => {
+    if (location && selectedMarker) {
+      const start = {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      };
+      const end = {
+        latitude: selectedMarker.latitude,
+        longitude: selectedMarker.longitude,
+      };
+      setDirections([start, end]);
+    }
+  };
+
+  const toggleFavorite = (marker) => {
+    if (favorites.includes(marker.id)) {
+      setFavorites(favorites.filter((id) => id !== marker.id));
+    } else {
+      setFavorites([...favorites, marker.id]);
+    }
+  };
+
+  const handleARNavigation = () => {
+    setShowARNavigation(true);
+    setShowDetails(false);
+  };
+
+  const handleShowFavorites = () => {
+    setShowFavorites(true);
+  };
+
+  const handleCloseFavorites = () => {
+    setShowFavorites(false);
+  };
+
+  const favoriteMarkers = markers.filter((marker) => favorites.includes(marker.id));
+
   if (errorMsg) {
-    return <View style={styles.container}><Text>{errorMsg}</Text></View>;
+    return (
+      <View style={styles.container}>
+        <Text>{errorMsg}</Text>
+      </View>
+    );
+  }
+
+  if (showARNavigation && selectedMarker) {
+    return (
+      <ARNavigation
+        destination={selectedMarker}
+        onBack={() => setShowARNavigation(false)}
+      />
+    );
   }
 
   return (
     <View style={styles.container}>
+      {/* Search Bar */}
+      <View style={styles.searchBar}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search locations..."
+          value={searchQuery}
+          onChangeText={handleSearch}
+        />
+        <Ionicons name="search" size={20} color="gray" />
+      </View>
+
+      {/* Favorites Button */}
+      <TouchableOpacity style={styles.favoritesButton} onPress={handleShowFavorites}>
+        <Ionicons name="heart" size={24} color="red" />
+        <Text style={styles.favoritesButtonText}>View Favorites</Text>
+      </TouchableOpacity>
+
+      {/* Map */}
       <MapView
         style={styles.map}
         initialRegion={{
@@ -75,14 +194,88 @@ export default function LocationScreen() {
         showsUserLocation={true}
         followsUserLocation={true}
       >
-        {markers.map((marker) => (
+        {filteredMarkers.map((marker) => (
           <Marker
             key={marker.id}
             coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
             title={marker.name}
+            onPress={() => handleMarkerPress(marker)}
           />
         ))}
+        {directions.length > 0 && (
+          <Polyline
+            coordinates={directions}
+            strokeWidth={3}
+            strokeColor="blue"
+          />
+        )}
       </MapView>
+
+      {/* Marker Details Modal */}
+      <Modal visible={showDetails} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{selectedMarker?.name}</Text>
+            <TouchableOpacity
+              style={styles.directionsButton}
+              onPress={calculateDirections}
+            >
+              <Text style={styles.directionsButtonText}>Get Directions</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.arButton}
+              onPress={handleARNavigation}
+            >
+              <Text style={styles.arButtonText}>Start AR Navigation</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.favoriteButton}
+              onPress={() => toggleFavorite(selectedMarker)}
+            >
+              <Text style={styles.favoriteButtonText}>
+                {favorites.includes(selectedMarker?.id) ? 'Remove Favorite' : 'Add to Favorites'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowDetails(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Favorites Modal */}
+      <Modal visible={showFavorites} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Favorites</Text>
+            <FlatList
+              data={favoriteMarkers}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.favoriteItem}
+                  onPress={() => {
+                    setSelectedMarker(item);
+                    setShowFavorites(false);
+                    setShowDetails(true);
+                  }}
+                >
+                  <Text style={styles.favoriteItemText}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleCloseFavorites}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -96,5 +289,107 @@ const styles = StyleSheet.create({
   map: {
     width: width,
     height: height,
+  },
+  searchBar: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 10,
+    zIndex: 1,
+    elevation: 3,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  favoritesButton: {
+    position: 'absolute',
+    top: 100, // Positioned below the search bar
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 10,
+    zIndex: 1,
+    elevation: 3,
+  },
+  favoritesButtonText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: 'red',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  directionsButton: {
+    backgroundColor: 'blue',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  directionsButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  arButton: {
+    backgroundColor: 'green',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  arButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  favoriteButton: {
+    backgroundColor: 'orange',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  favoriteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  favoriteItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  favoriteItemText: {
+    fontSize: 16,
   },
 });

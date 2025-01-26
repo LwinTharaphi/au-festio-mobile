@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { Camera } from 'expo-camera';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
-const ARNavigation = ({ destination }) => {
+const ARNavigation = ({ destination, onBack }) => {
   const [hasPermission, setHasPermission] = useState(null);
   const [location, setLocation] = useState(null);
   const [heading, setHeading] = useState(0);
@@ -66,6 +67,9 @@ const ARNavigation = ({ destination }) => {
         <View style={styles.arrowContainer}>
           <Text style={[styles.arrow, { transform: [{ rotate: `${rotation}deg` }] }]}>{'↑'}</Text>
         </View>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Ionicons name="arrow-back" size={30} color="white" />
+        </TouchableOpacity>
       </Camera>
       <MapView
         style={styles.map}
@@ -99,6 +103,11 @@ const styles = StyleSheet.create({
   arrow: {
     fontSize: 40,
     color: 'white',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
   },
   map: {
     width,

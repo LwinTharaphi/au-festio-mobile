@@ -1,8 +1,8 @@
 import React, { useLayoutEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons'; // Import Ionicons
-import EventStackNavigator from './EventStackNavigator'; // Replace with your actual stack navigator
-import LocationScreen from '../screens/LocationScreen'; // Updated LocationScreen
+import { Ionicons } from '@expo/vector-icons';
+import EventStackNavigator from './EventStackNavigator';
+import LocationScreen from '../screens/LocationScreen';
 import ProfileStackNavigator from './ProfileStackNavigator';
 import { useNavigationState } from '@react-navigation/native';
 
@@ -16,8 +16,6 @@ export default function MainTabNavigator({ route, navigation }) {
     if (!stage) return null;
 
     const route = stage.routes[stage.index];
-    // console.log("route", route);
-
     if (route.state) {
       return getNestedRouteName(route.state);
     }
@@ -25,14 +23,12 @@ export default function MainTabNavigator({ route, navigation }) {
   };
 
   const currentRoute = getNestedRouteName(navigationState);
-  console.log("currentRoute", currentRoute);
-
   const hideTabBarScreens = ['EventDetail', 'Details', 'Staffs', 'Booths', 'Notification'];
 
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarStyle: { display: hideTabBarScreens.includes(currentRoute) ? 'none' : 'flex' }, // Hide the tab bar for Details, Staffs, and Booths
+        tabBarStyle: { display: hideTabBarScreens.includes(currentRoute) ? 'none' : 'flex' },
       }}>
       <Tab.Screen
         name="Events"
@@ -41,7 +37,7 @@ export default function MainTabNavigator({ route, navigation }) {
           headerShown: false,
           tabBarLabel: 'Events',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} /> // Icon for Events
+            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />
@@ -53,7 +49,7 @@ export default function MainTabNavigator({ route, navigation }) {
           headerShown: false,
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} /> // Icon for Profile
+            <Ionicons name="person" size={size} color={color} />
           ),
         }}
       />
@@ -64,7 +60,7 @@ export default function MainTabNavigator({ route, navigation }) {
           headerShown: false,
           tabBarLabel: 'Location',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map" size={size} color={color} /> // Icon for Location
+            <Ionicons name="map" size={size} color={color} />
           ),
         }}
       />
