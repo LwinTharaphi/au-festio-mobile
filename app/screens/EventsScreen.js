@@ -107,7 +107,7 @@ export default function EventsScreen({ navigation, route }) {
     console.log('Current time:', currentHours, currentMinutes);
 
     for (const event of events) {
-      if (event.isRegistered) {
+      if (event.isRegistered && !scheduleNotifications.has(event._id)) {
         console.log('Event:', event.eventName, event.eventDate, event.endTime);
         const eventDate = new Date(event.eventDate).toISOString().split('T')[0];
         const endTime = event.endTime
@@ -128,11 +128,11 @@ export default function EventsScreen({ navigation, route }) {
         console.log('Current time:', currentTime.toLocaleTimeString());
 
         // Schedule notification for event start
-        if (eventDate === currentDate && notificationStartTime.getHours() === currentHours && notificationStartTime.getMinutes() === currentMinutes) {
+        if (eventDate === currentDate) {
           await Notifications.scheduleNotificationAsync({
             content: {
               title: 'Event Reminder',
-              body: `Event ${event.eventName} is about to start!`,
+              body: `Todat is the day for event ${event.eventName}!`,
               data: { eventId: event._id },
             },
             trigger: { date: notificationStartTime },
