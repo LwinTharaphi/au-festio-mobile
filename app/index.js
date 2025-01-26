@@ -118,27 +118,27 @@ export default function App() {
     registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
     registerBackgroundFetch();
 
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
-      setNotification(notification);
-    });
+    // notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+    //   console.log('Notification received:', notification);
+    //   setNotification(notification);
+    // });
 
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log("Notification response received: ", response);
-      const { action } = response.notification.request.content.data;
-      if (action === 'reload') {
-        console.log("Reload action triggered");
-      }
-    });
-    return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
+    // responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+    //   console.log("Notification response received: ", response);
+    //   const { action } = response.notification.request.content.data;
+    //   if (action === 'reload') {
+    //     console.log("Reload action triggered");
+    //   }
+    // });
+    // return () => {
+    //   if (notificationListener.current) {
+    //     Notifications.removeNotificationSubscription(notificationListener.current);
+    //   }
 
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
-    }
+    //   if (responseListener.current) {
+    //     Notifications.removeNotificationSubscription(responseListener.current);
+    //   }
+    // }
   }, [appReloaded]);
 
   useEffect(() => {

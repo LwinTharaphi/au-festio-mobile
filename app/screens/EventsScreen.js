@@ -21,7 +21,7 @@ export default function EventsScreen({ navigation, route }) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isRegisteredUpdated, setIsRegisteredUpdated] = useState(false);
-  const [scheduleNotifications, setScheduleNotifications] = useState(new Set());
+  // const [scheduleNotifications, setScheduleNotifications] = useState(new Set());
 
   useEffect(() => {
     const firebaseUser = auth.currentUser;
@@ -101,8 +101,32 @@ export default function EventsScreen({ navigation, route }) {
   const saveNotificationToStorage = async (notification) => {
     try{
       const storedNotifications = JSON.parse(await AsyncStorage.getItem('notifications')) || [];
-      const updatedNotifications = [notification, ...storedNotifications];
-      await AsyncStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+
+      const normalizedNotification = {
+        title: notification.title,
+        body: notification.body,
+        data: {
+          eventId: notification.data.eventId,
+          type: notification.data.type,
+        },
+        timestamp: notification.timestamp || new Date().toLocaleDateString(),
+        autoDismiss: notification.autoDismiss || false,
+        sound: notification.sound || 'default',
+        sticky: notification.sticky || false,
+      };
+      console.log('Normalized notification:', normalizedNotification);
+      // Check if the type is empty
+      if (!normalizedNotification.data.type) {
+        console.log('Notification type is empty, not storing:', normalizedNotification);
+        return;
+      }
+      const isDuplicate = storedNotifications.some((n) => n.data.eventId === normalizedNotification.data.eventId && n.data.type === normalizedNotification.data.type);
+
+      if (!isDuplicate) {
+        const updatedNotifications = [normalizedNotification, ...storedNotifications];
+        console.log('Updated notifications:', updatedNotifications);
+        await AsyncStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+      }
     } catch (error) {
       console.error('Failed to save notification:', error);
     }
@@ -111,16 +135,17 @@ export default function EventsScreen({ navigation, route }) {
   const scheduleNotificationsLogic = async () => {
     const currentTime = new Date();
     console.log('Current time:', currentTime);
-    const currentDate = currentTime.toISOString().split('T')[0];
+    const currentDate = currentTime.toLocaleDateString().split('T')[0];
     const currentHours = currentTime.getHours();
     const currentMinutes = currentTime.getMinutes();
     console.log('Current date:', currentDate);
     console.log('Current time:', currentHours, currentMinutes);
 
+    const notifications = JSON.parse(await AsyncStorage.getItem('notifications')) || [];
     for (const event of events) {
-      if (event.isRegistered && !scheduleNotifications.has(event._id)) {
+      if (event.isRegistered) {
         console.log('Event:', event.eventName, event.eventDate, event.endTime);
-        const eventDate = new Date(event.eventDate).toISOString().split('T')[0];
+        const eventDate = new Date(event.eventDate).toLocaleDateString().split('T')[0];
         const endTime = event.endTime
         const startTime = event.startTime
         const [startHours, startMinutes] = startTime.split(':').map(Number);
@@ -139,33 +164,33 @@ export default function EventsScreen({ navigation, route }) {
         console.log('Current time:', currentTime.toLocaleTimeString());
 
         // Schedule notification for event start
-        if (eventDate === currentDate) {
+        if (eventDate === currentDate && !notifications.some((n)=> n.data.type === 'event-reminder' && n.data.eventId === event._id)) {
           await Notifications.scheduleNotificationAsync({
             content: {
               title: 'Event Reminder',
               body: `Today is the day for event ${event.eventName}!`,
-              data: { eventId: event._id },
+              data: { eventId: event._id, type: 'event-reminder' },
             },
             trigger: { date: eventDate },
           });
-          saveNotificationToStorage({ title: 'Event Reminder', body: `Today is the day for event ${event.eventName}!`, timestamp: currentTime.toLocaleTimeString(), data: { eventId: event._id } });
+          saveNotificationToStorage({ title: 'Event Reminder', body: `Today is the day for event ${event.eventName}!`, type: 'event-reminder',timestamp: currentTime.toLocaleDateString(), data: { eventId: event._id } });
           console.log('Notification scheduled for event start:', event.eventName);
         }
 
         // Schedule notification for event end
-        if (eventDate === currentDate && notificationEndTime.getHours() === currentHours && notificationEndTime.getMinutes() === currentMinutes) {
+        if (eventDate === currentDate && notificationEndTime > currentTime && !notifications.some((n)=> n.data.type === 'feedback-reminder' && n.data.eventId === event._id)) {
           await Notifications.scheduleNotificationAsync({
             content: {
               title: 'Feedback Reminder',
               body: `Event ${event.eventName} has ended. Please provide your feedback!`,
-              data: { eventId: event._id },
+              data: { eventId: event._id, type: 'feedback-reminder'},
             },
-            trigger: { date: notificationEndTime.toLocaleTimeString() },
+            trigger: { date: notificationEndTime.getTime() },
           });
-          saveNotificationToStorage({ title: 'Feedback Reminder', body: `Event ${event.eventName} has ended. Please provide your feedback!`, timestamp: notificationStartTime.toLocaleTimeString(), data: { eventId: event._id } });
+          saveNotificationToStorage({ title: 'Feedback Reminder', body: `Event ${event.eventName} has ended. Please provide your feedback!`, type: 'feedback-reminder', timestamp: notificationStartTime.toLocaleDateString(), data: { eventId: event._id } });
           console.log('Notification scheduled for event end:', event.eventName);
         }
-        setScheduleNotifications((prevNotifications) => new Set([...prevNotifications, event._id]));
+        // setScheduleNotifications((prevNotifications) => new Set([...prevNotifications, event._id]));
       }
     }
   };
@@ -174,7 +199,7 @@ export default function EventsScreen({ navigation, route }) {
     if (expoPushToken && events.length > 0) {
       scheduleNotificationsLogic();
     }
-  }, [events, expoPushToken]);
+  }, [expoPushToken, events]);
 
   const filteredEvents = events.filter((event) => (tab === 'registered' ? event.isRegistered : !event.isRegistered));
 
@@ -187,9 +212,9 @@ export default function EventsScreen({ navigation, route }) {
       saveNotificationToStorage(notification.request.content);
     });
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const { eventId } = response.notification.request.content.data;
-      console.log('Notification response received:', response, eventId);
-      navigation.navigate('Notification', { eventId });
+      const { eventId, type } = response.notification.request.content.data;
+      console.log('Notification response received:', response, eventId, type);
+      navigation.navigate('Notification', { eventId, type });
     });
     return () => {
       notificationSubscription.remove();
