@@ -273,7 +273,7 @@ export default function LocationScreen() {
           <Polyline
             coordinates={directions}
             strokeWidth={3}
-            strokeColor="blue"
+            strokeColor="red"
           />
         )}
       </MapView>
