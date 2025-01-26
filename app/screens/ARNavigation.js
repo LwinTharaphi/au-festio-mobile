@@ -63,14 +63,20 @@ const ARNavigation = ({ destination, onBack }) => {
 
   return (
     <View style={styles.container}>
+      {/* AR Camera View */}
       <Camera style={styles.camera} type={Camera.Constants.Type.back}>
         <View style={styles.arrowContainer}>
           <Text style={[styles.arrow, { transform: [{ rotate: `${rotation}deg` }] }]}>{'↑'}</Text>
         </View>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={30} color="white" />
-        </TouchableOpacity>
       </Camera>
+
+      {/* Back Button */}
+      <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <Ionicons name="arrow-back" size={24} color="white" />
+        <Text style={styles.backButtonText}>Back to Map</Text>
+      </TouchableOpacity>
+
+      {/* Mini Map */}
       <MapView
         style={styles.map}
         initialRegion={{
@@ -106,8 +112,26 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 40,
+    bottom: 20, // Positioned at the bottom of the screen
     left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF', // Solid blue background
+    borderRadius: 25, // Rounded corners
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    zIndex: 1,
+    elevation: 3, // Shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  backButtonText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: 'white',
+    fontWeight: 'bold',
   },
   map: {
     width,

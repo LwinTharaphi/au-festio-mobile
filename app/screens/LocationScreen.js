@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, TextInput, Text, TouchableOpacity, Modal, FlatList } from 'react-native';
+import { View, StyleSheet, Dimensions, TextInput, Text, TouchableOpacity, Modal, FlatList, ActivityIndicator } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,6 +45,22 @@ const markers = [
 ];
 
 
+// Function to calculate distance between two coordinates (in meters)
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3; // Earth radius in meters
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distance in meters
+};
+
 export default function LocationScreen() {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -54,7 +70,8 @@ export default function LocationScreen() {
   const [showDetails, setShowDetails] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [showARNavigation, setShowARNavigation] = useState(false);
-  const [showFavorites, setShowFavorites] = useState(false); // State to toggle favorites modal
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Loading state
 
   // Load favorites from AsyncStorage on component mount
   useEffect(() => {
@@ -83,16 +100,19 @@ export default function LocationScreen() {
     saveFavorites();
   }, [favorites]);
 
+  // Fetch user location
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setErrorMsg('Permission to access location was denied');
+        setIsLoading(false);
         return;
       }
 
       let location = await Location.getCurrentPositionAsync({});
       setLocation(location.coords);
+      setIsLoading(false);
     })();
   }, []);
 
@@ -123,6 +143,10 @@ export default function LocationScreen() {
     }
   };
 
+  const clearDirections = () => {
+    setDirections([]);
+  };
+
   const toggleFavorite = (marker) => {
     if (favorites.includes(marker.id)) {
       setFavorites(favorites.filter((id) => id !== marker.id));
@@ -144,12 +168,24 @@ export default function LocationScreen() {
     setShowFavorites(false);
   };
 
+  const removeAllFavorites = () => {
+    setFavorites([]);
+  };
+
   const favoriteMarkers = markers.filter((marker) => favorites.includes(marker.id));
 
   if (errorMsg) {
     return (
       <View style={styles.container}>
         <Text>{errorMsg}</Text>
+      </View>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
@@ -200,6 +236,7 @@ export default function LocationScreen() {
             coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
             title={marker.name}
             onPress={() => handleMarkerPress(marker)}
+            pinColor={favorites.includes(marker.id) ? 'red' : 'blue'} // Custom marker color
           />
         ))}
         {directions.length > 0 && (
@@ -216,11 +253,22 @@ export default function LocationScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{selectedMarker?.name}</Text>
+            {location && selectedMarker && (
+              <Text style={styles.distanceText}>
+                Distance: {calculateDistance(location.latitude, location.longitude, selectedMarker.latitude, selectedMarker.longitude).toFixed(2)} meters
+              </Text>
+            )}
             <TouchableOpacity
               style={styles.directionsButton}
               onPress={calculateDirections}
             >
               <Text style={styles.directionsButtonText}>Get Directions</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.clearDirectionsButton}
+              onPress={clearDirections}
+            >
+              <Text style={styles.clearDirectionsButtonText}>Clear Directions</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.arButton}
@@ -267,6 +315,12 @@ export default function LocationScreen() {
                 </TouchableOpacity>
               )}
             />
+            <TouchableOpacity
+              style={styles.removeAllButton}
+              onPress={removeAllFavorites}
+            >
+              <Text style={styles.removeAllButtonText}>Remove All Favorites</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={handleCloseFavorites}
@@ -341,6 +395,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
+  distanceText: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
   directionsButton: {
     backgroundColor: 'blue',
     padding: 10,
@@ -349,6 +407,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   directionsButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  clearDirectionsButton: {
+    backgroundColor: 'gray',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  clearDirectionsButtonText: {
     color: 'white',
     fontWeight: 'bold',
   },
@@ -391,5 +460,16 @@ const styles = StyleSheet.create({
   },
   favoriteItemText: {
     fontSize: 16,
+  },
+  removeAllButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  removeAllButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
