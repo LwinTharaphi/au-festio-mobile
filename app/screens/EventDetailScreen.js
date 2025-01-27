@@ -34,6 +34,7 @@ export default function EventDetailScreen({ route }) {
   const [qrModalVisible, setqrModalVisible] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -128,6 +129,27 @@ export default function EventDetailScreen({ route }) {
   };
 
   const handleConfirm = () => {
+    const requiredFields = ["sid", "name", "email", "faculty", "phone"];
+    const missingFields = requiredFields.filter((field) => !formData[field]);
+
+    // Check specifically for the payment receipt in paid events
+    if (event.isPaid && !formData.paymentScreenshot) {
+      if (missingFields.length === 0) {
+        // If only the payment receipt is missing
+        setErrorMessage("Please upload your payment receipt.");
+        return;
+      } else {
+        // If both the payment receipt and other fields are missing
+        missingFields.push("paymentScreenshot");
+      }
+    }
+
+    if (missingFields.length > 0) {
+      // Generic error for missing fields
+      setErrorMessage("Please fill all the fields.");
+      return;
+    }
+
     Alert.alert(
       "Confirm Registration",
       "Are you sure you want to register for this event?",
@@ -456,8 +478,13 @@ export default function EventDetailScreen({ route }) {
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
+                {errorMessage ? (
+                  <Text style={[styles.errorMessage, { color: "red" }]}>
+                    {errorMessage}
+                  </Text>
+                ) : null}
                 <Text style={styles.modalTitle}>Register for Event</Text>
-                
+
                 <TextInput
                   placeholder="ID"
                   placeholderTextColor="#AAA"
@@ -539,7 +566,7 @@ export default function EventDetailScreen({ route }) {
                         flexDirection: 'row',
                         alignItems: 'center',
                         padding: 3,
-                        justifyContent: 'center',                      
+                        justifyContent: 'center',
                         backgroundColor: '#E8F5E9',
                         borderRadius: 10,
                         borderWidth: 1,
@@ -794,5 +821,11 @@ const styles = StyleSheet.create({
     color: 'red', // red color
     marginTop: 5, // optional, adds some spacing above the text
     marginBottom: 7, // optional, adds some spacing
+  },
+  errorMessage: {
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: "center",
   },
 });
