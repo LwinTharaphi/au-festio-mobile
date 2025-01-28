@@ -1,7 +1,8 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import QRCode from 'react-native-qrcode-svg';
+import { Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {
   View,
@@ -35,6 +36,7 @@ export default function EventDetailScreen({ route }) {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const formContainer = useRef(new Animated.Value(0)).current; // Initialize the animated value
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -128,15 +130,75 @@ export default function EventDetailScreen({ route }) {
     setqrModalVisible(false);
   };
 
-  const handleConfirm = () => {
-    const requiredFields = ["sid", "name", "email", "faculty", "phone"];
-    const missingFields = requiredFields.filter((field) => !formData[field]);
+  const requiredFields = ["sid", "name", "email", "faculty", "phone"];
+  const missingFields = requiredFields.filter((field) => !formData[field]);
 
+  const shakeForm = () => {
+    Animated.sequence([
+      // Horizontal shake to the right
+      Animated.timing(formContainer, {
+        toValue: 10, // Move to the right
+        duration: 100,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz down
+      Animated.timing(formContainer, {
+        toValue: 10, // Move down
+        duration: 100,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Horizontal shake to the left
+      Animated.timing(formContainer, {
+        toValue: -10, // Move to the left
+        duration: 100,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz up
+      Animated.timing(formContainer, {
+        toValue: -10, // Move up
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Horizontal shake to the right again
+      Animated.timing(formContainer, {
+        toValue: 10, // Move to the right
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz down again
+      Animated.timing(formContainer, {
+        toValue: 10, // Move down
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Horizontal shake to the left again
+      Animated.timing(formContainer, {
+        toValue: -10, // Move to the left
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz up again
+      Animated.timing(formContainer, {
+        toValue: -10, // Move up
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Return to the original position
+      Animated.timing(formContainer, {
+        toValue: 0, // Return to the original position
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+    ]).start();
+  };
+  
+  const handleConfirm = () => {
     // Check specifically for the payment receipt in paid events
     if (event.isPaid && !formData.paymentScreenshot) {
       if (missingFields.length === 0) {
         // If only the payment receipt is missing
         setErrorMessage("Please upload your payment receipt.");
+        shakeForm();
         return;
       } else {
         // If both the payment receipt and other fields are missing
@@ -147,6 +209,7 @@ export default function EventDetailScreen({ route }) {
     if (missingFields.length > 0) {
       // Generic error for missing fields
       setErrorMessage("Please fill all the fields.");
+      shakeForm();
       return;
     }
 
@@ -484,66 +547,71 @@ export default function EventDetailScreen({ route }) {
                   </Text>
                 ) : null}
                 <Text style={styles.modalTitle}>Register for Event</Text>
+                <Animated.View
+                  style={{
+                    transform: [{ translateX: formContainer }], // Apply the shake animation to the form container
+                  }}
+                >
 
-                <TextInput
-                  placeholder="ID"
-                  placeholderTextColor="#AAA"
-                  style={styles.input}
-                  value={formData.sid}
-                  onChangeText={(text) => setFormData({ ...formData, sid: text })}
-                />
-                <TextInput
-                  placeholder="Name"
-                  placeholderTextColor="#AAA"
-                  style={styles.input}
-                  value={formData.name}
-                  onChangeText={(text) => setFormData({ ...formData, name: text })}
-                />
-                <TextInput
-                  placeholder="Email"
-                  placeholderTextColor="#AAA"
-                  style={styles.input}
-                  keyboardType="email-address"
-                  value={formData.email}
-                  onChangeText={(text) => setFormData({ ...formData, email: text })}
-                />
-                <View style={[styles.pickerContainer, { height: 43 }]}>
-                  <Picker
-                    selectedValue={formData.faculty}
-                    style={[
-                      styles.picker,
-                      { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
-                    ]}
-                    onValueChange={(value) => setFormData({ ...formData, faculty: value })}
-                  >
-                    <Picker.Item label="Select Faculty" value="" />
-                    {faculties.map((faculty) => (
-                      <Picker.Item key={faculty} label={faculty} value={faculty} />
-                    ))}
-                  </Picker>
-                </View>
-
-                <TextInput
-                  placeholder="Phone"
-                  placeholderTextColor="#AAA"
-                  style={styles.input}
-                  keyboardType="phone-pad"
-                  value={formData.phone}
-                  onChangeText={(text) => setFormData({ ...formData, phone: text })}
-                />
-                {event.isPaid && (
-                  <>
-                    <TouchableOpacity
-                      onPress={handleImageClick}
-                      style={{ justifyContent: 'center', alignItems: 'center' }}
+                  <TextInput
+                    placeholder="ID"
+                    placeholderTextColor="#AAA"
+                    style={styles.input}
+                    value={formData.sid}
+                    onChangeText={(text) => setFormData({ ...formData, sid: text })}
+                  />
+                  <TextInput
+                    placeholder="Name"
+                    placeholderTextColor="#AAA"
+                    style={styles.input}
+                    value={formData.name}
+                    onChangeText={(text) => setFormData({ ...formData, name: text })}
+                  />
+                  <TextInput
+                    placeholder="Email"
+                    placeholderTextColor="#AAA"
+                    style={styles.input}
+                    keyboardType="email-address"
+                    value={formData.email}
+                    onChangeText={(text) => setFormData({ ...formData, email: text })}
+                  />
+                  <View style={[styles.pickerContainer, { height: 43 }]}>
+                    <Picker
+                      selectedValue={formData.faculty}
+                      style={[
+                        styles.picker,
+                        { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
+                      ]}
+                      onValueChange={(value) => setFormData({ ...formData, faculty: value })}
                     >
-                      <SvgXml xml={qrData} width="180" height="180" />
-                    </TouchableOpacity>
+                      <Picker.Item label="Select Faculty" value="" />
+                      {faculties.map((faculty) => (
+                        <Picker.Item key={faculty} label={faculty} value={faculty} />
+                      ))}
+                    </Picker>
+                  </View>
 
-                    {/* <Button title="Upload Payment Receipt" onPress={handleReceiptUpload} />
+                  <TextInput
+                    placeholder="Phone"
+                    placeholderTextColor="#AAA"
+                    style={styles.input}
+                    keyboardType="phone-pad"
+                    value={formData.phone}
+                    onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                  />
+                  {event.isPaid && (
+                    <>
+                      <TouchableOpacity
+                        onPress={handleImageClick}
+                        style={{ justifyContent: 'center', alignItems: 'center' }}
+                      >
+                        <SvgXml xml={qrData} width="180" height="180" />
+                      </TouchableOpacity>
+
+                      {/* <Button title="Upload Payment Receipt" onPress={handleReceiptUpload} />
                   {formData.receipt && <Text>Uploaded: {formData.receipt.name}</Text>} */}
 
-                    {/* <View style={[styles.pickerContainer, { height: 43 }]}>
+                      {/* <View style={[styles.pickerContainer, { height: 43 }]}>
                     <TouchableOpacity style={styles.picker} onPress={handleReceiptUpload}>
                       {formData.receipt ? (
                         <Text style={styles.uploadedText}>{formData.receipt.fileName || 'Receipt Uploaded'}</Text>
@@ -559,92 +627,93 @@ export default function EventDetailScreen({ route }) {
                     )}
                   </View> */}
 
-                    {/* Image Upload Button */}
-                    <TouchableOpacity
-                      onPress={handleImageUpload}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        padding: 3,
-                        justifyContent: 'center',
-                        backgroundColor: '#E8F5E9',
-                        borderRadius: 10,
-                        borderWidth: 1,
-                        borderColor: '#4CAF50',
-                        marginVertical: 5,
-                      }}
-                    >
-                      <Icon name="cloud-upload" size={35} color="#4CAF50" />
-                      <Text
+                      {/* Image Upload Button */}
+                      <TouchableOpacity
+                        onPress={handleImageUpload}
                         style={{
-                          marginLeft: 10,
-                          fontSize: 12,
-                          fontWeight: 'bold',
-                          color: '#4CAF50',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          padding: 3,
+                          justifyContent: 'center',
+                          backgroundColor: '#E8F5E9',
+                          borderRadius: 10,
+                          borderWidth: 1,
+                          borderColor: '#4CAF50',
+                          marginVertical: 5,
                         }}
                       >
-                        Upload Payment Screenshot
-                      </Text>
-                    </TouchableOpacity>
+                        <Icon name="cloud-upload" size={35} color="#4CAF50" />
+                        <Text
+                          style={{
+                            marginLeft: 10,
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            color: '#4CAF50',
+                          }}
+                        >
+                          Upload Payment Screenshot
+                        </Text>
+                      </TouchableOpacity>
 
-                    {formData.paymentScreenshot && (
-                      <View style={styles.uploadedImageContainer}>
-                        <Image source={{ uri: formData.paymentScreenshot.uri }} style={styles.uploadedImage} />
-                        <TouchableOpacity onPress={removeImage}>
-                          <Text style={styles.removeText}>Remove Image</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-
-                    {/* Modal for full-screen image */}
-                    <Modal
-                      visible={qrModalVisible}
-                      transparent={true}
-                      onRequestClose={handleImageClose}
-                    >
-                      <TouchableWithoutFeedback onPress={handleImageClose}>
-                        <View style={styles.modalContainer}>
-                          <SvgXml xml={qrData} width="100%" height="100%" />
+                      {formData.paymentScreenshot && (
+                        <View style={styles.uploadedImageContainer}>
+                          <Image source={{ uri: formData.paymentScreenshot.uri }} style={styles.uploadedImage} />
+                          <TouchableOpacity onPress={removeImage}>
+                            <Text style={styles.removeText}>Remove Image</Text>
+                          </TouchableOpacity>
                         </View>
-                      </TouchableWithoutFeedback>
-                    </Modal>
-                  </>
-                )}
-                <View>
-                  <Text style={styles.policyText}>By registering, you agree to the terms and conditions of the event.</Text>
-                  <Text style={styles.policyText}>
-                    Refund Policy:
-                    {event.refundPolicy && event.refundPolicy.length > 0 ? (
-                      event.refundPolicy.map((policy, index) => {
-                        let policyText = ` ${policy.percentage}% in ${policy.days} days`;
-                        // Add comma except for the last policy
-                        if (index < event.refundPolicy.length - 1) {
-                          policyText += ', ';
-                        }
-                        return policyText;
-                      })
-                    ) : (
-                      " No Refund Policy"
-                    )}
-                    {event.refundPolicy && event.refundPolicy.length > 0 && (
-                      ` and no refund after ${event.refundPolicy[event.refundPolicy.length - 1].days} days.`
-                    )}
-                  </Text>
-                </View>
-                <View style={styles.buttonContainer}>
-                  <View style={styles.buttonWrapper}>
-                    <Button title="Cancel" onPress={() => setModalVisible(false)} />
+                      )}
+
+                      {/* Modal for full-screen image */}
+                      <Modal
+                        visible={qrModalVisible}
+                        transparent={true}
+                        onRequestClose={handleImageClose}
+                      >
+                        <TouchableWithoutFeedback onPress={handleImageClose}>
+                          <View style={styles.modalContainer}>
+                            <SvgXml xml={qrData} width="100%" height="100%" />
+                          </View>
+                        </TouchableWithoutFeedback>
+                      </Modal>
+                    </>
+                  )}
+                  <View>
+                    <Text style={styles.policyText}>By registering, you agree to the terms and conditions of the event.</Text>
+                    <Text style={styles.policyText}>
+                      Refund Policy:
+                      {event.refundPolicy && event.refundPolicy.length > 0 ? (
+                        event.refundPolicy.map((policy, index) => {
+                          let policyText = ` ${policy.percentage}% in ${policy.days} days`;
+                          // Add comma except for the last policy
+                          if (index < event.refundPolicy.length - 1) {
+                            policyText += ', ';
+                          }
+                          return policyText;
+                        })
+                      ) : (
+                        " No Refund Policy"
+                      )}
+                      {event.refundPolicy && event.refundPolicy.length > 0 && (
+                        ` and no refund after ${event.refundPolicy[event.refundPolicy.length - 1].days} days.`
+                      )}
+                    </Text>
                   </View>
-                  <View style={styles.buttonWrapper}>
-                    <Button title="Confirm" onPress={handleConfirm} />
+                  <View style={styles.buttonContainer}>
+                    <View style={styles.buttonWrapper}>
+                      <Button title="Cancel" onPress={() => setModalVisible(false)} />
+                    </View>
+                    <View style={styles.buttonWrapper}>
+                      <Button title="Confirm" onPress={handleConfirm} />
+                    </View>
                   </View>
-                </View>
+                </Animated.View>
               </View>
             </View>
           </ScrollView>
         </Modal>
       </View>
-    </ScrollView>
+    </ScrollView >
   );
 }
 
