@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import {
@@ -13,6 +13,7 @@ import {
   Alert,
   Button,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { auth } from '../config/firebase'
 
@@ -24,6 +25,8 @@ export default function StaffRolesScreen({ route }) {
   const [staffData, setStaffData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const formContainer = useRef(new Animated.Value(0)).current;
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -82,8 +85,75 @@ export default function StaffRolesScreen({ route }) {
     setFormData((prevState) => ({ ...prevState, role }));
     setModalVisible(true);
   };
+  const requiredFields = ["id", "name", "email", "faculty", "phone"];
+  const missingFields = requiredFields.filter((field) => !formData[field]);
+
+  const shakeForm = () => {
+    Animated.sequence([
+      // Horizontal shake to the right
+      Animated.timing(formContainer, {
+        toValue: 10, // Move to the right
+        duration: 100,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz down
+      Animated.timing(formContainer, {
+        toValue: 10, // Move down
+        duration: 100,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Horizontal shake to the left
+      Animated.timing(formContainer, {
+        toValue: -10, // Move to the left
+        duration: 100,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz up
+      Animated.timing(formContainer, {
+        toValue: -10, // Move up
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Horizontal shake to the right again
+      Animated.timing(formContainer, {
+        toValue: 10, // Move to the right
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz down again
+      Animated.timing(formContainer, {
+        toValue: 10, // Move down
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Horizontal shake to the left again
+      Animated.timing(formContainer, {
+        toValue: -10, // Move to the left
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz up again
+      Animated.timing(formContainer, {
+        toValue: -10, // Move up
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Return to the original position
+      Animated.timing(formContainer, {
+        toValue: 0, // Return to the original position
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+    ]).start();
+  };
 
   const handleConfirm = () => {
+    if (missingFields.length > 0) {
+      // Generic error for missing fields
+      setErrorMessage("Please fill all the fields.");
+      shakeForm();
+      return;
+    }
     Alert.alert(
       "Confirm Registration",
       "Are you sure you want to register for this event?",
@@ -236,64 +306,75 @@ export default function StaffRolesScreen({ route }) {
       />
       {modalVisible && (
         <Modal
+          visible={modalVisible}
           animationType="slide"
           transparent={true}
-          visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}
         >
-          <ScrollView contentContainerStyle={{ flexGrow: 0.5, height: '100%' }}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Register</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="ID"
-                  value={formData.id}
-                  onChangeText={(text) => setFormData({ ...formData, id: text })}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Name"
-                  value={formData.name}
-                  onChangeText={(text) => setFormData({ ...formData, name: text })}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email"
-                  keyboardType="email-address"
-                  value={formData.email}
-                  onChangeText={(text) => setFormData({ ...formData, email: text })}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Phone"
-                  keyboardType="phone-pad"
-                  value={formData.phone}
-                  onChangeText={(text) => setFormData({ ...formData, phone: text })}
-                />
-                <View style={[styles.pickerContainer, { height: 43 }]}>
-                  <Picker
-                    selectedValue={formData.faculty}
-                    style={[
-                      styles.picker,
-                      { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
-                    ]}
-                    onValueChange={(value) => setFormData({ ...formData, faculty: value })}
-                  >
-                    <Picker.Item label="Select Faculty" value="" />
-                    {faculties.map((faculty) => (
-                      <Picker.Item key={faculty} label={faculty} value={faculty} />
-                    ))}
-                  </Picker>
-                </View>
-                <View style={styles.buttonContainer}>
-                  <View style={styles.buttonWrapper}>
-                    <Button title="Cancel" onPress={() => setModalVisible(false)} />
+                {errorMessage ? (
+                  <Text style={[styles.errorMessage, { color: "red" }]}>
+                    {errorMessage}
+                  </Text>
+                ) : null}
+                <Text style={styles.modalTitle}>Register for Event</Text>
+                <Animated.View
+                  style={{
+                    transform: [{ translateX: formContainer }], // Apply the shake animation to the form container
+                  }}
+                >
+                  <TextInput
+                    style={styles.input}
+                    placeholder="ID"
+                    value={formData.id}
+                    onChangeText={(text) => setFormData({ ...formData, id: text })}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Name"
+                    value={formData.name}
+                    onChangeText={(text) => setFormData({ ...formData, name: text })}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email"
+                    keyboardType="email-address"
+                    value={formData.email}
+                    onChangeText={(text) => setFormData({ ...formData, email: text })}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Phone"
+                    keyboardType="phone-pad"
+                    value={formData.phone}
+                    onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                  />
+                  <View style={[styles.pickerContainer, { height: 43 }]}>
+                    <Picker
+                      selectedValue={formData.faculty}
+                      style={[
+                        styles.picker,
+                        { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
+                      ]}
+                      onValueChange={(value) => setFormData({ ...formData, faculty: value })}
+                    >
+                      <Picker.Item label="Select Faculty" value="" />
+                      {faculties.map((faculty) => (
+                        <Picker.Item key={faculty} label={faculty} value={faculty} />
+                      ))}
+                    </Picker>
                   </View>
-                  <View style={styles.buttonWrapper}>
-                    <Button title="Confirm" onPress={handleConfirm} />
+                  <View style={styles.buttonContainer}>
+                    <View style={styles.buttonWrapper}>
+                      <Button title="Cancel" onPress={() => setModalVisible(false)} />
+                    </View>
+                    <View style={styles.buttonWrapper}>
+                      <Button title="Confirm" onPress={handleConfirm} />
+                    </View>
                   </View>
-                </View>
+                </Animated.View>
               </View>
             </View>
           </ScrollView>
@@ -330,7 +411,7 @@ const styles = StyleSheet.create({
     borderColor: '#A67EEC', // Border color
     borderWidth: 1, // Border width to make the color visible
   },
-  
+
   roleName: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -397,5 +478,11 @@ const styles = StyleSheet.create({
   buttonWrapper: {
     width: 120, // Set the width here as per your requirement
     marginBottom: 10, // Add margin as needed
+  },
+  errorMessage: {
+    color: "red",
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: "center",
   },
 });

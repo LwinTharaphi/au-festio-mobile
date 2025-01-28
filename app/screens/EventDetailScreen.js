@@ -556,7 +556,6 @@ export default function EventDetailScreen({ route }) {
                         top: '50%', // Vertically center the icon
                         transform: [{ translateY: -12 }], // Adjust based on icon size
                       },
-
                     }}
                     value={formData.faculty}
                     useNativeAndroidPickerStyle={false}
