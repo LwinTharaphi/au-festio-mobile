@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import RNPickerSelect from 'react-native-picker-select';
@@ -17,7 +17,8 @@ import {
   TextInput,
   Alert,
   ScrollView,
-  Platform
+  Platform,
+  Animated,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -36,6 +37,7 @@ export default function EventDetailScreen({ route }) {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const formContainer = useRef(new Animated.Value(0)).current;
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -139,16 +141,76 @@ export default function EventDetailScreen({ route }) {
   const handleImageClose = () => {
     setqrModalVisible(false);
   };
+  const requiredFields = ["sid", "name", "email", "faculty", "phone"];
+  const missingFields = requiredFields.filter((field) => !formData[field]);
+
+  const shakeForm = () => {
+    Animated.sequence([
+      // Horizontal shake to the right
+      Animated.timing(formContainer, {
+        toValue: 10, // Move to the right
+        duration: 100,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz down
+      Animated.timing(formContainer, {
+        toValue: 10, // Move down
+        duration: 100,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Horizontal shake to the left
+      Animated.timing(formContainer, {
+        toValue: -10, // Move to the left
+        duration: 100,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz up
+      Animated.timing(formContainer, {
+        toValue: -10, // Move up
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Horizontal shake to the right again
+      Animated.timing(formContainer, {
+        toValue: 10, // Move to the right
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz down again
+      Animated.timing(formContainer, {
+        toValue: 10, // Move down
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Horizontal shake to the left again
+      Animated.timing(formContainer, {
+        toValue: -10, // Move to the left
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Vertical buzz up again
+      Animated.timing(formContainer, {
+        toValue: -10, // Move up
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+      // Return to the original position
+      Animated.timing(formContainer, {
+        toValue: 0, // Return to the original position
+        duration: 50,
+        useNativeDriver: false, // Use JS thread
+      }),
+    ]).start();
+  };
 
   const handleConfirm = () => {
-    const requiredFields = ["sid", "name", "email", "faculty", "phone"];
-    const missingFields = requiredFields.filter((field) => !formData[field]);
 
     // Check specifically for the payment receipt in paid events
     if (event.isPaid && !formData.paymentScreenshot) {
       if (missingFields.length === 0) {
         // If only the payment receipt is missing
         setErrorMessage("Please upload your payment receipt.");
+        shakeForm();
         return;
       } else {
         // If both the payment receipt and other fields are missing
@@ -159,6 +221,7 @@ export default function EventDetailScreen({ route }) {
     if (missingFields.length > 0) {
       // Generic error for missing fields
       setErrorMessage("Please fill all the fields.");
+      shakeForm();
       return;
     }
 
@@ -496,6 +559,11 @@ export default function EventDetailScreen({ route }) {
                   </Text>
                 ) : null}
                 <Text style={styles.modalTitle}>Register for Event</Text>
+                <Animated.View
+                  style={{
+                    transform: [{ translateX: formContainer }], // Apply the shake animation to the form container
+                  }}
+                >
 
                 <TextInput
                   placeholder="ID"
@@ -679,6 +747,7 @@ export default function EventDetailScreen({ route }) {
                     <Button title="Confirm" onPress={handleConfirm} />
                   </View>
                 </View>
+                </Animated.View>
               </View>
             </View>
           </ScrollView>
