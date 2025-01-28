@@ -54,6 +54,9 @@ export default function StaffRolesScreen({ route }) {
 
         const [eventData, staffRolesData, staffsData] = await Promise.all([eventResponse.json(), staffRolesResponse.json(), staffsResponse.json()]);
 
+        // Check if the current user's ID matches any firebaseUID in staffData
+        const currentUserStaff = staffsData.find(staff => staff.firebaseUID === user?.uid);
+
         const roleCounts = staffsData.reduce((counts, staff) => {
           counts[staff.role.name] = (counts[staff.role.name] || 0) + 1;
           return counts;
@@ -66,7 +69,7 @@ export default function StaffRolesScreen({ route }) {
 
         setEvent(eventData);
         setStaffRoles(updatedStaffRolesData);
-        setStaffData(staffsData);
+        setStaffData(currentUserStaff);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -148,6 +151,9 @@ export default function StaffRolesScreen({ route }) {
   };
 
   const handleConfirm = () => {
+    console.log("Event Data", event);
+    console.log("Staff Roles", staffRoles);
+    console.log("Staff Data", staffData);
     if (missingFields.length > 0) {
       // Generic error for missing fields
       setErrorMessage("Please fill all the fields.");
@@ -166,7 +172,8 @@ export default function StaffRolesScreen({ route }) {
         {
           text: "OK",
           onPress: () => {
-            const payload = { ...formData, role: formData.role, event };
+            const firebaseUID = user?.uid;
+            const payload = { ...formData, role: formData.role, event,firebaseUID };
             fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -255,6 +262,9 @@ export default function StaffRolesScreen({ route }) {
     const spotsLeft = item.count - item.roleCounts;
     const displaySpotsLeft = Math.max(spotsLeft, 0);
     const isSpotsAvailable = displaySpotsLeft > 0;
+
+    // Check if the current user is already registered for this role
+    const isUserRegistered = staffData.some(staff => staff.firebaseUID === user?.uid && staff.role._id === item._id);
 
     return (
       <View style={styles.card}>
