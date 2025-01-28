@@ -23,7 +23,7 @@ export default function MainTabNavigator({ route, navigation }) {
   };
 
   const currentRoute = getNestedRouteName(navigationState);
-  const hideTabBarScreens = ['EventDetail', 'Details', 'Staffs', 'Booths', 'Notification'];
+  const hideTabBarScreens = ['EventDetail', 'Details', 'Staffs', 'Booths', 'Notification', 'NotificationDetail'];
 
   return (
     <Tab.Navigator

@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { View, FlatList, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useNavigation } from '@react-navigation/native';
 
 export default function NotificationScreen() {
   const [notifications, setNotifications] = useState([]);
+  const navigation = useNavigation();
 
   useEffect(() => {
     loadNotifications();
@@ -68,6 +70,13 @@ export default function NotificationScreen() {
     );
   };
 
+  const handleNotificationPress = (notification) => {
+    const { eventId, type } = notification.data;
+    if (type === 'feedback-reminder') {
+      navigation.navigate('NotificationDetail', { eventId, type, notification });
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -83,7 +92,7 @@ export default function NotificationScreen() {
           data={notifications}
           keyExtractor={(item) => `${item.data.eventId}-${item.data.type}`} // Use eventId as a unique identifier
           renderItem={({ item }) => (
-            <View style={styles.notificationItem}>
+            <TouchableOpacity onPress={()=> handleNotificationPress(item)} style={styles.notificationItem}>
               <View style={styles.textContainer}>
                 <Text style={styles.title}>{item.title}</Text>
                 <Text style={styles.body}>{item.body}</Text>
@@ -91,7 +100,7 @@ export default function NotificationScreen() {
               <TouchableOpacity onPress={() => confirmDelete(`${item.data.eventId}-${item.data.type}`)} style={styles.deleteButton}>
                 <Text style={styles.deleteText}>:</Text>
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}

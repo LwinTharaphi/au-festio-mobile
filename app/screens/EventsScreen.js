@@ -226,7 +226,7 @@ export default function EventsScreen({ navigation, route }) {
     <View style={styles.container}>
       <View className="flex-row justify-between items-center px-4 py-3">
         <Text className="text-xl font-bold text-gray-800">Au-Festio</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
+        <TouchableOpacity onPress={() => navigation.navigate('NotificationStack')}>
           <Icon name="notifications" size={24} color={colors.button} />
         </TouchableOpacity>
       </View>
