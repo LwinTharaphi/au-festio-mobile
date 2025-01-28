@@ -62,6 +62,7 @@ export default function EventsScreen({ navigation, route }) {
       if (data.length === 0) {
         setHasMore(false);
       } else {
+        // console.log("Data",data);
         const filteredAndSortedEvents = data.flatMap((organizer) =>
           organizer.events
             .filter((event) => {
@@ -77,6 +78,7 @@ export default function EventsScreen({ navigation, route }) {
               isRegistered: event.isRegistered,
             }))
         );
+        // console.log("filteredAndSortedEvents",filteredAndSortedEvents);
         const uniqueEvents = filteredAndSortedEvents.filter((event, index, self) =>
           index === self.findIndex((e) => e._id === event._id)
         );
@@ -108,6 +110,7 @@ export default function EventsScreen({ navigation, route }) {
         data: {
           eventId: notification.data.eventId,
           type: notification.data.type,
+          organizerId: notification.data.organizerId,
         },
         timestamp: notification.timestamp || new Date().toLocaleDateString(),
         autoDismiss: notification.autoDismiss || false,
@@ -144,7 +147,7 @@ export default function EventsScreen({ navigation, route }) {
     const notifications = JSON.parse(await AsyncStorage.getItem('notifications')) || [];
     for (const event of events) {
       if (event.isRegistered) {
-        console.log('Event:', event.eventName, event.eventDate, event.endTime);
+        console.log('Event:', event.eventName, event.eventDate, event.endTime, event.organizerId);
         const eventDate = new Date(event.eventDate).toLocaleDateString().split('T')[0];
         const endTime = event.endTime
         const startTime = event.startTime
@@ -156,6 +159,7 @@ export default function EventsScreen({ navigation, route }) {
 
         const notificationEndTime = new Date(event.eventDate);
         notificationEndTime.setHours(endHours, endMinutes+5);
+        console.log("OrganizerId",event.organizerId);
         console.log('Event date:', eventDate);
         console.log('Event end time:', endTime);
         console.log('Event end time+ 5 minutes:', notificationEndTime.toLocaleTimeString());
@@ -169,11 +173,11 @@ export default function EventsScreen({ navigation, route }) {
             content: {
               title: 'Event Reminder',
               body: `Today is the day for event ${event.eventName}!`,
-              data: { eventId: event._id, type: 'event-reminder' },
+              data: { eventId: event._id, type: 'event-reminder', organizerId: event.organizerId },
             },
             trigger: { date: eventDate },
           });
-          saveNotificationToStorage({ title: 'Event Reminder', body: `Today is the day for event ${event.eventName}!`, type: 'event-reminder',timestamp: currentTime.toLocaleDateString(), data: { eventId: event._id } });
+          saveNotificationToStorage({ title: 'Event Reminder', body: `Today is the day for event ${event.eventName}!`, type: 'event-reminder',timestamp: currentTime.toLocaleDateString(), data: { eventId: event._id, organizerId: event.organizerId } });
           console.log('Notification scheduled for event start:', event.eventName);
         }
 
@@ -183,11 +187,11 @@ export default function EventsScreen({ navigation, route }) {
             content: {
               title: 'Feedback Reminder',
               body: `Event ${event.eventName} has ended. Please provide your feedback!`,
-              data: { eventId: event._id, type: 'feedback-reminder'},
+              data: { eventId: event._id, type: 'feedback-reminder',organizerId: event.organizerId},
             },
             trigger: { date: notificationEndTime.getTime() },
           });
-          saveNotificationToStorage({ title: 'Feedback Reminder', body: `Event ${event.eventName} has ended. Please provide your feedback!`, type: 'feedback-reminder', timestamp: notificationStartTime.toLocaleDateString(), data: { eventId: event._id } });
+          saveNotificationToStorage({ title: 'Feedback Reminder', body: `Event ${event.eventName} has ended. Please provide your feedback!`, type: 'feedback-reminder', timestamp: notificationStartTime.toLocaleDateString(), data: { eventId: event._id, organizerId: event.organizerId } });
           console.log('Notification scheduled for event end:', event.eventName);
         }
         // setScheduleNotifications((prevNotifications) => new Set([...prevNotifications, event._id]));
