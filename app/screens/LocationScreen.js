@@ -1,12 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, TextInput, Text, TouchableOpacity, Modal, FlatList, ActivityIndicator, Keyboard } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  TextInput,
+  Text,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  ActivityIndicator,
+  Keyboard,
+} from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ARNavigation from './ARNavigation';
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window'); // Define width and height
 
 const markers = [
   { id: 1, name: 'CL Building', latitude: 13.611652749054086, longitude: 100.83792247449529 },
@@ -61,6 +72,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c; // Distance in meters
 };
 
+
+
 export default function LocationScreen() {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -73,6 +86,8 @@ export default function LocationScreen() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showARNavigation, setShowARNavigation] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const mapRef = useRef(null);
 
   // Load favorites from AsyncStorage on component mount
   useEffect(() => {
@@ -137,14 +152,14 @@ export default function LocationScreen() {
       const response = await fetch(url);
       const data = await response.json();
       if (data.routes && data.routes.length > 0) {
-        const coordinates = data.routes[0].geometry.coordinates.map(coord => ({
+        const coordinates = data.routes[0].geometry.coordinates.map((coord) => ({
           latitude: coord[1],
           longitude: coord[0],
         }));
         setDirections(coordinates);
 
         // Extract steps for turn-by-turn directions
-        const steps = data.routes[0].legs[0].steps.map(step => step.maneuver.instruction);
+        const steps = data.routes[0].legs[0].steps.map((step) => step.maneuver.instruction);
         setSteps(steps);
       } else {
         console.error('No route found');
@@ -247,8 +262,26 @@ export default function LocationScreen() {
         <Text style={styles.favoritesButtonText}>View Favorites</Text>
       </TouchableOpacity>
 
+      {/* Get Your Location Button */}
+      <TouchableOpacity
+        style={styles.getLocationButton}
+        onPress={() => {
+          if (location) {
+            mapRef.current.animateToRegion({
+              latitude: location.latitude,
+              longitude: location.longitude,
+              latitudeDelta: 0.02,
+              longitudeDelta: 0.02,
+            });
+          }
+        }}
+      >
+        <Ionicons name="locate" size={24} color="blue" />
+      </TouchableOpacity>
+
       {/* Map */}
       <MapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={{
           latitude: location ? location.latitude : 13.611652749054086,
@@ -270,11 +303,7 @@ export default function LocationScreen() {
           />
         ))}
         {directions.length > 0 && (
-          <Polyline
-            coordinates={directions}
-            strokeWidth={3}
-            strokeColor="red"
-          />
+          <Polyline coordinates={directions} strokeWidth={3} strokeColor="red" />
         )}
       </MapView>
 
@@ -285,7 +314,12 @@ export default function LocationScreen() {
             <Text style={styles.modalTitle}>{selectedMarker?.name}</Text>
             {location && selectedMarker && (
               <Text style={styles.distanceText}>
-                Distance: {calculateDistance(location.latitude, location.longitude, selectedMarker.latitude, selectedMarker.longitude).toFixed(2)} meters
+                Distance: {calculateDistance(
+                  location.latitude,
+                  location.longitude,
+                  selectedMarker.latitude,
+                  selectedMarker.longitude
+                ).toFixed(2)} meters
               </Text>
             )}
             <TouchableOpacity
@@ -402,21 +436,32 @@ const styles = StyleSheet.create({
   },
   favoritesButton: {
     position: 'absolute',
-    top: 100,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
+    top: 100, // Adjust this value as needed
+    left: 20, // Position on the left side
+    backgroundColor: 'white',
+    borderRadius: 15, // Rounded corners
+    paddingVertical: 15, // Vertical padding
+    paddingHorizontal: 20, // Horizontal padding
+    flexDirection: 'row', // Align icon and text horizontally
+    alignItems: 'center', // Center items vertically
+    zIndex: 1,
+    elevation: 3,
+  },
+  favoritesButtonText: {
+    marginLeft: 10, // Space between icon and text
+    fontSize: 16, // Font size
+    color: 'red', // Text color
+    fontWeight: 'bold', // Bold text
+  },
+  getLocationButton: {
+    position: 'absolute',
+    top: 100, // Adjust this value as needed
+    right: 20, // Position on the right side
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 10,
     zIndex: 1,
     elevation: 3,
-  },
-  favoritesButtonText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: 'red',
   },
   modalContainer: {
     flex: 1,
