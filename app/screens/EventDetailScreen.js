@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
+import RNPickerSelect from 'react-native-picker-select';
 import QRCode from 'react-native-qrcode-svg';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {
@@ -46,7 +47,18 @@ export default function EventDetailScreen({ route }) {
   const [studentId, setStudentId] = useState(null); // State to store student ID
   const [qrData, setQrData] = useState(null);
   const [registeredDate, setRegisteredDate] = useState(null);
-  const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
+  // const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
+  const faculties = [
+    { label: 'VMES', value: 'VMES' },
+    { label: 'MSME', value: 'MSME' },
+    { label: 'Arts', value: 'Arts' },
+    { label: 'Music', value: 'Music' },
+    { label: 'Biotechnology', value: 'Biotechnology' },
+    { label: 'Law', value: 'Law' },
+    { label: 'Communication Arts', value: 'Communication Arts' },
+    { label: 'Architecture and Design', value: 'Architecture and Design' },
+    { label: 'Nursing Science', value: 'Nursing Science' },
+  ];
   const user = auth.currentUser;
   const baseS3Url = `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/`;
 
@@ -508,7 +520,7 @@ export default function EventDetailScreen({ route }) {
                   onChangeText={(text) => setFormData({ ...formData, email: text })}
                 />
                 <View style={[styles.pickerContainer, { height: 43 }]}>
-                  <Picker
+                  {/* <Picker
                     selectedValue={formData.faculty}
                     style={[
                       styles.picker,
@@ -520,7 +532,20 @@ export default function EventDetailScreen({ route }) {
                     {faculties.map((faculty) => (
                       <Picker.Item key={faculty} label={faculty} value={faculty} />
                     ))}
-                  </Picker>
+                  </Picker> */}
+                  <RNPickerSelect
+                    onValueChange={(value) => setFormData({ ...formData, faculty: value })}
+                    items={faculties}
+                    placeholder={{ label: 'Select Faculty', value: '' }}
+                    style={{
+                      inputIOS: styles.picker,
+                      inputAndroid: styles.picker,
+                      placeholder: {
+                        color: '#AAA',
+                      },
+                    }}
+                    value={formData.faculty}
+                  />
                 </View>
 
                 <TextInput
