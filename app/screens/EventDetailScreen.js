@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
+import RNPickerSelect from 'react-native-picker-select';
 import QRCode from 'react-native-qrcode-svg';
 import { Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -48,7 +49,18 @@ export default function EventDetailScreen({ route }) {
   const [studentId, setStudentId] = useState(null); // State to store student ID
   const [qrData, setQrData] = useState(null);
   const [registeredDate, setRegisteredDate] = useState(null);
-  const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
+  // const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
+  const faculties = [
+    { label: 'VMES', value: 'VMES' },
+    { label: 'MSME', value: 'MSME' },
+    { label: 'Arts', value: 'Arts' },
+    { label: 'Music', value: 'Music' },
+    { label: 'Biotechnology', value: 'Biotechnology' },
+    { label: 'Law', value: 'Law' },
+    { label: 'Communication Arts', value: 'Communication Arts' },
+    { label: 'Architecture and Design', value: 'Architecture and Design' },
+    { label: 'Nursing Science', value: 'Nursing Science' },
+  ];
   const user = auth.currentUser;
   const baseS3Url = `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/`;
 
@@ -553,6 +565,7 @@ export default function EventDetailScreen({ route }) {
                   }}
                 >
 
+<<<<<<< HEAD
                   <TextInput
                     placeholder="ID"
                     placeholderTextColor="#AAA"
@@ -583,6 +596,72 @@ export default function EventDetailScreen({ route }) {
                         { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
                       ]}
                       onValueChange={(value) => setFormData({ ...formData, faculty: value })}
+=======
+                <TextInput
+                  placeholder="ID"
+                  placeholderTextColor="#AAA"
+                  style={styles.input}
+                  value={formData.sid}
+                  onChangeText={(text) => setFormData({ ...formData, sid: text })}
+                />
+                <TextInput
+                  placeholder="Name"
+                  placeholderTextColor="#AAA"
+                  style={styles.input}
+                  value={formData.name}
+                  onChangeText={(text) => setFormData({ ...formData, name: text })}
+                />
+                <TextInput
+                  placeholder="Email"
+                  placeholderTextColor="#AAA"
+                  style={styles.input}
+                  keyboardType="email-address"
+                  value={formData.email}
+                  onChangeText={(text) => setFormData({ ...formData, email: text })}
+                />
+                <View style={[styles.pickerContainer, { height: 43 }]}>
+                  {/* <Picker
+                    selectedValue={formData.faculty}
+                    style={[
+                      styles.picker,
+                      { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
+                    ]}
+                    onValueChange={(value) => setFormData({ ...formData, faculty: value })}
+                  >
+                    <Picker.Item label="Select Faculty" value="" />
+                    {faculties.map((faculty) => (
+                      <Picker.Item key={faculty} label={faculty} value={faculty} />
+                    ))}
+                  </Picker> */}
+                  <RNPickerSelect
+                    onValueChange={(value) => setFormData({ ...formData, faculty: value })}
+                    items={faculties}
+                    placeholder={{ label: 'Select Faculty', value: '' }}
+                    style={{
+                      inputIOS: styles.picker,
+                      inputAndroid: styles.picker,
+                      placeholder: {
+                        color: '#AAA',
+                      },
+                    }}
+                    value={formData.faculty}
+                  />
+                </View>
+
+                <TextInput
+                  placeholder="Phone"
+                  placeholderTextColor="#AAA"
+                  style={styles.input}
+                  keyboardType="phone-pad"
+                  value={formData.phone}
+                  onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                />
+                {event.isPaid && (
+                  <>
+                    <TouchableOpacity
+                      onPress={handleImageClick}
+                      style={{ justifyContent: 'center', alignItems: 'center' }}
+>>>>>>> f00225b72801d5e260af035734df46383e2ae50b
                     >
                       <Picker.Item label="Select Faculty" value="" />
                       {faculties.map((faculty) => (
