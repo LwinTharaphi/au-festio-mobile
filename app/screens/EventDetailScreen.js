@@ -538,13 +538,29 @@ export default function EventDetailScreen({ route }) {
                     items={faculties}
                     placeholder={{ label: 'Select Faculty', value: '' }}
                     style={{
-                      inputIOS: styles.picker,
+                      inputIOS: {
+                        ...styles.picker,
+                        color: '#AAA', // Force black text for selected value
+                      },
                       inputAndroid: styles.picker,
                       placeholder: {
                         color: '#AAA',
                       },
+                      viewContainer: {
+                        borderWidth: 1,
+                        borderColor: '#ccc',
+                        borderRadius: 5,
+                        justifyContent: 'center',
+                      },
+                      iconContainer: {
+                        top: '50%', // Vertically center the icon
+                        transform: [{ translateY: -12 }], // Adjust based on icon size
+                      },
+
                     }}
                     value={formData.faculty}
+                    useNativeAndroidPickerStyle={false}
+                    Icon={() => <Icon name="arrow-drop-down" size={24} color="#AAA" />}
                   />
                 </View>
 
@@ -752,7 +768,9 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: '100%',
-    color: '#AAA'
+    color: '#AAA',
+    paddingHorizontal: 10,
+    paddingVertical: 12,
   },
   buttonContainer: {
     flexDirection: 'row',

@@ -14,6 +14,7 @@ import {
   Button,
   ScrollView,
 } from 'react-native';
+import { auth } from '../config/firebase'
 
 export default function StaffRolesScreen({ route }) {
   const navigation = useNavigation();
@@ -33,6 +34,8 @@ export default function StaffRolesScreen({ route }) {
   const [registeredRole, setRegisteredRole] = useState(null);
   const [staffId, setStaffId] = useState(null);
   const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
+
+  const user = auth.currentUser;
 
   useEffect(() => {
     const fetchData = async () => {
