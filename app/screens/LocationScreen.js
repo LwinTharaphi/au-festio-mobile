@@ -73,8 +73,6 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c; // Distance in meters
 };
 
-
-
 export default function LocationScreen() {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -87,6 +85,7 @@ export default function LocationScreen() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showARNavigation, setShowARNavigation] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSteps, setShowSteps] = useState(false);
 
   const mapRef = useRef(null);
 
@@ -187,6 +186,7 @@ export default function LocationScreen() {
   const clearDirections = () => {
     setDirections([]);
     setSteps([]);
+    setShowSteps(false);
   };
 
   const toggleFavorite = (marker) => {
@@ -335,6 +335,16 @@ export default function LocationScreen() {
               <Text style={styles.directionsButtonText}>Get Directions</Text>
             </TouchableOpacity>
             {steps.length > 0 && (
+              <TouchableOpacity
+                style={styles.toggleStepsButton}
+                onPress={() => setShowSteps(!showSteps)}
+              >
+                <Text style={styles.toggleStepsButtonText}>
+                  {showSteps ? 'Hide Steps' : 'Show Steps'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {showSteps && steps.length > 0 && (
               <FlatList
                 data={steps}
                 keyExtractor={(item, index) => index.toString()}
@@ -441,31 +451,31 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   clearIcon: {
-    marginRight: 10, // Add some spacing between the clear icon and the search icon
+    marginRight: 10,
   },
   favoritesButton: {
     position: 'absolute',
-    top: 100, // Adjust this value as needed
-    left: 20, // Position on the left side
+    top: 100,
+    left: 20,
     backgroundColor: 'white',
-    borderRadius: 15, // Rounded corners
-    paddingVertical: 15, // Vertical padding
-    paddingHorizontal: 20, // Horizontal padding
-    flexDirection: 'row', // Align icon and text horizontally
-    alignItems: 'center', // Center items vertically
+    borderRadius: 15,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
     zIndex: 1,
     elevation: 3,
   },
   favoritesButtonText: {
-    marginLeft: 10, // Space between icon and text
-    fontSize: 16, // Font size
-    color: 'red', // Text color
-    fontWeight: 'bold', // Bold text
+    marginLeft: 10,
+    fontSize: 16,
+    color: 'red',
+    fontWeight: 'bold',
   },
   getLocationButton: {
     position: 'absolute',
-    top: 100, // Adjust this value as needed
-    right: 20, // Position on the right side
+    top: 100,
+    right: 20,
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 10,
@@ -568,5 +578,16 @@ const styles = StyleSheet.create({
   stepText: {
     fontSize: 14,
     marginVertical: 5,
+  },
+  toggleStepsButton: {
+    backgroundColor: 'purple',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  toggleStepsButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
