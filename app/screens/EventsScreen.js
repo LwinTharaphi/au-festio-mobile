@@ -117,7 +117,7 @@ export default function EventsScreen({ navigation, route }) {
         sound: notification.sound || 'default',
         sticky: notification.sticky || false,
       };
-      console.log('Normalized notification:', normalizedNotification);
+      // console.log('Normalized notification:', normalizedNotification);
       // Check if the type is empty
       if (!normalizedNotification.data.type) {
         console.log('Notification type is empty, not storing:', normalizedNotification);
@@ -127,7 +127,7 @@ export default function EventsScreen({ navigation, route }) {
 
       if (!isDuplicate) {
         const updatedNotifications = [normalizedNotification, ...storedNotifications];
-        console.log('Updated notifications:', updatedNotifications);
+        // console.log('Updated notifications:', updatedNotifications);
         await AsyncStorage.setItem('notifications', JSON.stringify(updatedNotifications));
       }
     } catch (error) {
@@ -137,17 +137,17 @@ export default function EventsScreen({ navigation, route }) {
 
   const scheduleNotificationsLogic = async () => {
     const currentTime = new Date();
-    console.log('Current time:', currentTime);
+    // console.log('Current time:', currentTime);
     const currentDate = currentTime.toLocaleDateString().split('T')[0];
     const currentHours = currentTime.getHours();
     const currentMinutes = currentTime.getMinutes();
-    console.log('Current date:', currentDate);
-    console.log('Current time:', currentHours, currentMinutes);
+    // console.log('Current date:', currentDate);
+    // console.log('Current time:', currentHours, currentMinutes);
 
     const notifications = JSON.parse(await AsyncStorage.getItem('notifications')) || [];
     for (const event of events) {
       if (event.isRegistered) {
-        console.log('Event:', event.eventName, event.eventDate, event.endTime, event.organizerId);
+        // console.log('Event:', event.eventName, event.eventDate, event.endTime, event.organizerId);
         const eventDate = new Date(event.eventDate).toLocaleDateString().split('T')[0];
         const endTime = event.endTime
         const startTime = event.startTime
@@ -159,13 +159,13 @@ export default function EventsScreen({ navigation, route }) {
 
         const notificationEndTime = new Date(event.eventDate);
         notificationEndTime.setHours(endHours, endMinutes+5);
-        console.log("OrganizerId",event.organizerId);
-        console.log('Event date:', eventDate);
-        console.log('Event end time:', endTime);
-        console.log('Event end time+ 5 minutes:', notificationEndTime.toLocaleTimeString());
-        console.log('Event start time:', startTime);
-        console.log('Event start time-5 minutes:', notificationStartTime.toLocaleTimeString(),notificationStartTime.getHours(),notificationStartTime.getMinutes());
-        console.log('Current time:', currentTime.toLocaleTimeString());
+        // console.log("OrganizerId",event.organizerId);
+        // console.log('Event date:', eventDate);
+        // console.log('Event end time:', endTime);
+        // console.log('Event end time+ 5 minutes:', notificationEndTime.toLocaleTimeString());
+        // console.log('Event start time:', startTime);
+        // console.log('Event start time-5 minutes:', notificationStartTime.toLocaleTimeString(),notificationStartTime.getHours(),notificationStartTime.getMinutes());
+        // console.log('Current time:', currentTime.toLocaleTimeString());
 
         // Schedule notification for event start
         if (eventDate === currentDate && !notifications.some((n)=> n.data.type === 'event-reminder' && n.data.eventId === event._id)) {
@@ -275,6 +275,7 @@ export default function EventsScreen({ navigation, route }) {
                 navigation.navigate('EventDetail', {
                   eventId: item._id,
                   organizerId: item.organizerId,
+                  isRegistered: item.isRegistered,
                   hideTabs: true,
                   onRegister: () => setIsRegisteredUpdated(true),
                 })

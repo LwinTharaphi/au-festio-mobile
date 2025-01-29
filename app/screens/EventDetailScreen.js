@@ -31,6 +31,7 @@ export default function EventDetailScreen({ route }) {
   const navigation = useNavigation();
   const { eventId } = route.params;
   const { organizerId } = route.params;
+  const { isRegistered: initialIsRegistered } = route.params;
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qrModalVisible, setqrModalVisible] = useState(false);
@@ -45,9 +46,10 @@ export default function EventDetailScreen({ route }) {
     phone: '',
     paymentScreenshot: null,
   });
-  const [isRegistered, setIsRegistered] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(initialIsRegistered);
   const [studentId, setStudentId] = useState(null); // State to store student ID
   const [qrData, setQrData] = useState(null);
+  const [paymentQR, setPaymentQR] = useState(null);
   const [registeredDate, setRegisteredDate] = useState(null);
   // const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
   const faculties = [
@@ -65,31 +67,76 @@ export default function EventDetailScreen({ route }) {
   const baseS3Url = `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/`;
 
   useEffect(() => {
-    // Fetch event details
-    fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}`)
-      .then((response) => response.json())
-      .then((data) => {
+    const fetchEventDetails = async () => {
+      try {
+        const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}`);
+        const data = await response.json();
         setEvent(data);
-        console.log("Event details:", data);
-        // console.log("Event Uri", `https://${AWS_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/posters/${data.poster}`);
         setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Error fetching event details:', error);
+      } catch (error) {
+        console.error("Error fetching event details:", error);
         setLoading(false);
-      });
+      }
+    };
+  
     const fetchQRCodes = async () => {
       try {
         const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/qr`);
         const data = await response.json();
-        console.log('QR Code Data:', data);
-        setQrData(data.qrSvg);
+        setPaymentQR(data.qrSvg);
       } catch (error) {
-        console.error('Error fetching QR code:', error);
+        console.error("Error fetching QR code:", error);
       }
-    }
-    fetchQRCodes();
-  }, [organizerId, eventId]);
+    };
+
+    const fetchCheckInQR = async () => {
+      // if (!studentId || !user?.uid) return;
+      try {
+        const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/getcheckinqr?studentId=${studentId}&firebaseUID=${user.firebaseUID}`);
+        const data = await response.json();
+        if (data) {
+          setQrData(data.qrCodeData);
+          console.log("Check in QR code data:", data.qrCodeData);
+        } else {
+          console.error("QR code data not found.");
+        }
+      } catch (error) {
+        console.error("Error fetching check-in QR code:", error);
+      }
+    };
+  
+    const fetchStudentDetails = async () => {
+      if (!isRegistered || !user?.uid) return;
+  
+      try {
+        const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`);
+        const data = await response.json();
+        const student = data.find((student) => student.firebaseUID === user.uid);
+        if (student) {
+          setStudentId(student._id);
+          setRegisteredDate(new Date(student.createdAt));
+          fetchCheckInQR();
+        }
+      } catch (error) {
+        console.error("Error fetching student details:", error);
+      }
+    };
+  
+    // Fetch all the data
+    const fetchData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchEventDetails(),
+        fetchQRCodes(),
+        fetchCheckInQR(),
+        fetchStudentDetails()
+      ]);
+      setLoading(false);
+    };
+  
+    fetchData();
+  }, [organizerId, eventId, user, isRegistered]);
+  
 
   const currentDate = new Date().toLocaleDateString();
 
@@ -308,6 +355,7 @@ export default function EventDetailScreen({ route }) {
                 },
                 body: JSON.stringify({
                   studentId: data._id, // Use data._id instead of studentId
+                  firebaseUID: data.firebaseUID, // Send the firebaseUID
                   eventId: eventId, // Make sure you have the eventId
                   qrCodeData: qrCodeData, // Send the QR payload
                 }),
@@ -588,19 +636,7 @@ export default function EventDetailScreen({ route }) {
                   onChangeText={(text) => setFormData({ ...formData, email: text })}
                 />
                 <View style={[styles.pickerContainer, { height: 43 }]}>
-                  {/* <Picker
-                    selectedValue={formData.faculty}
-                    style={[
-                      styles.picker,
-                      { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
-                    ]}
-                    onValueChange={(value) => setFormData({ ...formData, faculty: value })}
-                  >
-                    <Picker.Item label="Select Faculty" value="" />
-                    {faculties.map((faculty) => (
-                      <Picker.Item key={faculty} label={faculty} value={faculty} />
-                    ))}
-                  </Picker> */}
+ 
                   <RNPickerSelect
                     onValueChange={(value) => setFormData({ ...formData, faculty: value })}
                     items={faculties}
@@ -645,7 +681,7 @@ export default function EventDetailScreen({ route }) {
                       onPress={handleImageClick}
                       style={{ justifyContent: 'center', alignItems: 'center' }}
                     >
-                      <SvgXml xml={qrData} width="180" height="180" />
+                      <SvgXml xml={paymentQR} width="180" height="180" />
                     </TouchableOpacity>
 
                     {/* <Button title="Upload Payment Receipt" onPress={handleReceiptUpload} />
@@ -712,7 +748,7 @@ export default function EventDetailScreen({ route }) {
                     >
                       <TouchableWithoutFeedback onPress={handleImageClose}>
                         <View style={styles.modalContainer}>
-                          <SvgXml xml={qrData} width="100%" height="100%" />
+                          <SvgXml xml={paymentQR} width="100%" height="100%" />
                         </View>
                       </TouchableWithoutFeedback>
                     </Modal>
