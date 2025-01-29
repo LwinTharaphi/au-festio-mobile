@@ -253,6 +253,11 @@ export default function LocationScreen() {
           value={searchQuery}
           onChangeText={handleSearch}
         />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color="black" style={styles.clearIcon} />
+          </TouchableOpacity>
+        )}
         <Ionicons name="search" size={20} color="black" />
       </View>
 
@@ -433,6 +438,9 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginLeft: 10,
+  },
+  clearIcon: {
+    marginRight: 10, // Add some spacing between the clear icon and the search icon
   },
   favoritesButton: {
     position: 'absolute',
