@@ -70,6 +70,8 @@ export default function StaffRolesScreen({ route }) {
         setEvent(eventData);
         setStaffRoles(updatedStaffRolesData);
         setStaffData(currentUserStaff);
+        setRegisteredRole(currentUserStaff?.role._id);
+        setStaffId(currentUserStaff?._id);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -78,6 +80,8 @@ export default function StaffRolesScreen({ route }) {
     };
 
     fetchData();
+    console.log("Staff Roles", staffRoles);
+    console.log("Staff Data", staffData);
   }, [organizerId, eventId]);
 
   const handleRegister = (role) => {
@@ -227,7 +231,8 @@ export default function StaffRolesScreen({ route }) {
         {
           text: "Yes",
           onPress: () => {
-            fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs/${staffId}`, {
+            const firebaseUID = user?.uid;
+            fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs/${staffId}?firebaseUID=${firebaseUID}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
             })
@@ -264,7 +269,7 @@ export default function StaffRolesScreen({ route }) {
     const isSpotsAvailable = displaySpotsLeft > 0;
 
     // Check if the current user is already registered for this role
-    const isUserRegistered = staffData.some(staff => staff.firebaseUID === user?.uid && staff.role._id === item._id);
+    // const isUserRegistered = staffData.some(staff => staff.firebaseUID === user?.uid && staff.role._id === item._id);
 
     return (
       <View style={styles.card}>
