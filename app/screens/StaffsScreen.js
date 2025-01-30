@@ -80,8 +80,6 @@ export default function StaffRolesScreen({ route }) {
     };
 
     fetchData();
-    console.log("Staff Roles", staffRoles);
-    console.log("Staff Data", staffData);
   }, [organizerId, eventId]);
 
   const handleRegister = (role) => {
@@ -232,7 +230,7 @@ export default function StaffRolesScreen({ route }) {
           text: "Yes",
           onPress: () => {
             const firebaseUID = user?.uid;
-            fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs/${staffId}?firebaseUID=${firebaseUID}`, {
+            fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs/${staffId}`, {
               method: 'DELETE',
               headers: { 'Content-Type': 'application/json' },
             })
