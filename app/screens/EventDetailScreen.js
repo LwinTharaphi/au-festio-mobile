@@ -32,6 +32,7 @@ export default function EventDetailScreen({ route }) {
   const { eventId } = route.params;
   const { organizerId } = route.params;
   const { isRegistered: initialIsRegistered } = route.params;
+  const { onRegister } = route.params;
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qrModalVisible, setqrModalVisible] = useState(false);
@@ -88,22 +89,6 @@ export default function EventDetailScreen({ route }) {
         console.error("Error fetching QR code:", error);
       }
     };
-
-    const fetchCheckInQR = async () => {
-      // if (!studentId || !user?.uid) return;
-      try {
-        const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/getcheckinqr?studentId=${studentId}&firebaseUID=${user.firebaseUID}`);
-        const data = await response.json();
-        if (data) {
-          setQrData(data.qrCodeData);
-          console.log("Check in QR code data:", data.qrCodeData);
-        } else {
-          console.error("QR code data not found.");
-        }
-      } catch (error) {
-        console.error("Error fetching check-in QR code:", error);
-      }
-    };
   
     const fetchStudentDetails = async () => {
       if (!isRegistered || !user?.uid) return;
@@ -115,7 +100,9 @@ export default function EventDetailScreen({ route }) {
         if (student) {
           setStudentId(student._id);
           setRegisteredDate(new Date(student.createdAt));
-          fetchCheckInQR();
+          // Fetch check-in QR code only if student exists
+          // await fetchCheckInQR(student._id, user.uid);
+          // console.log("Check in QR code data:", qrData);
         }
       } catch (error) {
         console.error("Error fetching student details:", error);
@@ -125,17 +112,38 @@ export default function EventDetailScreen({ route }) {
     // Fetch all the data
     const fetchData = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchEventDetails(),
-        fetchQRCodes(),
-        fetchCheckInQR(),
-        fetchStudentDetails()
-      ]);
-      setLoading(false);
+      try {
+        // Fetch event details and QR codes in parallel
+        await Promise.all([fetchEventDetails(), fetchQRCodes(),fetchStudentDetails()]);
+      } catch (error) {
+        console.error("Error during data fetch:", error);
+      } finally {
+        setLoading(false);
+      }
     };
   
     fetchData();
   }, [organizerId, eventId, user, isRegistered]);
+
+  useEffect(() => {
+    const fetchCheckInQR = async () => {
+      if (!studentId || !user.uid) return;
+      try {
+        const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/getcheckinqr?studentId=${studentId}&firebaseUID=${user.uid}`);
+        const data = await response.json();
+        console.log("Check in QR code data:", data);
+        if (data && data.qrCodeData) {
+          setQrData(data.qrCodeData);
+          console.log("Check in QR code data:", data.qrCodeData);
+        } else {
+          console.error("QR code data not found.");
+        }
+      } catch (error) {
+        console.error("Error fetching check-in QR code:", error);
+      }
+    };
+    fetchCheckInQR();
+  }, [studentId, user.uid]);
   
 
   const currentDate = new Date().toLocaleDateString();
@@ -341,7 +349,7 @@ export default function EventDetailScreen({ route }) {
               setStudentId(data._id); // Use the _id from the response
 
               // Generate QR code data
-              const qrPayload = `${eventId},${data._id}`;
+              const qrPayload = `${eventId},${data._id},${data.firebaseUID}`;
               setQrData(qrPayload);
 
               // Create the QR code using the react-native-qrcode-svg component
@@ -367,6 +375,8 @@ export default function EventDetailScreen({ route }) {
                 .catch((error) => {
                   console.error("Error posting QR code:", error);
                 });
+              
+              onRegister && onRegister(); // Call the onRegister function to update the parent component
 
             } catch (error) {
               console.error('Error registering:', error);
@@ -504,7 +514,7 @@ export default function EventDetailScreen({ route }) {
             <View style={{ marginTop: -25 }}>
               <Text style={styles.detailText}>Your check-in QR:</Text>
               <TouchableOpacity onPress={() => setqrModalVisible(true)} style={styles.qrContainer}>
-                <QRCode value={qrData} size={100} />
+                {qrData ? <QRCode value={qrData} size={100} /> : <Text>No QR code available</Text>}
               </TouchableOpacity>
             </View>
           </View>

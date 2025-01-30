@@ -47,6 +47,9 @@ export default function EventsScreen({ navigation, route }) {
   useFocusEffect(
     useCallback(() => {
       if (firebaseUserId) {
+        setPage(1);
+        setEvents([]);
+        setHasMore(true);
         loadEvents();  // Load all events when firebaseUserId is available
       }
     }, [firebaseUserId,isRegisteredUpdated])
