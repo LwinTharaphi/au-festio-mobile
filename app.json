@@ -19,16 +19,16 @@
       "color": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.reactnativejs.au-festio-mobile",
-      "googleServicesFile": "./GoogleService-Info.plist",
-      "infoPlist": {
-        "NSCameraUsageDescription": "This app requires camera access to provide AR navigation.",
-        "NSLocationWhenInUseUsageDescription": "This app requires your location to provide navigation assistance.",
-        "NSUSERTRACKINGUSAGEDESCRIPTION": "This app uses your data to provide a better user experience.",
-        "UIBackgroundModes": ["remote-notification"]
-      }
-    },
+    "supportsTablet": true,
+    "bundleIdentifier": "com.reactnativejs.au-festio-mobile",
+    "googleServicesFile": "./GoogleService-Info.plist",
+    "infoPlist": {
+      "NSCameraUsageDescription": "This app requires camera access to provide AR navigation.",
+      "NSLocationWhenInUseUsageDescription": "This app requires your location to provide navigation assistance.",
+      "NSUserTrackingUsageDescription": "This app uses your data to provide a better user experience.", // Corrected key name
+      "UIBackgroundModes": ["remote-notification"]
+    }
+  },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
