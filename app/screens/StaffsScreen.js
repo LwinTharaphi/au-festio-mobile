@@ -309,6 +309,7 @@ export default function StaffRolesScreen({ route }) {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.pageTitle}>Staffs</Text>
       <FlatList
         data={staffRoles}
         renderItem={renderStaffRoleCard}
@@ -401,13 +402,19 @@ export default function StaffRolesScreen({ route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFF',
+    backgroundColor: '#F9F7FE',
     padding: 10,
   },
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginLeft: 15,
+    marginVertical: 10,
   },
   card: {
     flex: 1,

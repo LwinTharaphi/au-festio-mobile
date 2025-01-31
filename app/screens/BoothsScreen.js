@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image } from 'react-native';
+import { View, Text, Image, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export default function BoothListScreen({ route }) {
-  const { organizerId, eventId } = route.params; // Access route.params to get the eventId
+  const { organizerId, eventId } = route.params;
   const [booths, setBooths] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch booths data from the API
     fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/booths`)
       .then((response) => response.json())
       .then((data) => {
@@ -18,7 +18,7 @@ export default function BoothListScreen({ route }) {
         console.error('Error fetching booths:', error);
         setLoading(false);
       });
-  }, [organizerId, eventId]); // Add eventId as a dependency to refetch when it changes
+  }, [organizerId, eventId]);
 
   if (loading) {
     return (
@@ -28,78 +28,136 @@ export default function BoothListScreen({ route }) {
     );
   }
 
-  // Function to render each booth card
   const renderBoothCard = ({ item }) => (
     <View style={styles.card}>
+      <View style={styles.headerContainer}>
+        <Text style={styles.boothTitle}>Booth {item.boothNumber}</Text>
+      </View>
       <Image
         source={{ uri: `${item.imagePath}` }}
-        style={{ width: '100%', height: 100, borderRadius: 5, marginBottom: 10 }}
-        resizeMode="cover"
+        style={styles.poster}
       />
-      <Text style={styles.boothName}>{item.boothName}</Text>
-      <Text>Booth Number: {item.boothNumber}</Text>
-      {/* <Text>Status: {item.status}</Text> */}
-      <Text>Vendor: {item.vendorName}</Text>
+      <View style={styles.infoContainer}>
+        <View style={styles.leftSide}>
+          <Text style={styles.boothName}>{item.boothName}</Text>
+          <Text style={styles.item}>{item.item}</Text>
+        </View>
+        <View style={styles.rightSide}>
+          <View style={styles.locationRow}>
+            <Icon name="location-on" size={16} color="#333" style={styles.icon} />
+            <Text style={styles.location}>{item.location}</Text>
+          </View>
+          <View style={styles.priceRow}>
+          <Icon name="monetization-on" size={16} color="#333" style={styles.icon} />
+            <Text style={styles.priceRange}>{item.priceRange} THB</Text>
+          </View>
+        </View>
+      </View>
     </View>
   );
 
   return (
     <View style={styles.container}>
+      {/* Page Title */}
+      <Text style={styles.pageTitle}>Booths</Text>
+
+      {/* Booth List */}
       <FlatList
         data={booths}
         renderItem={renderBoothCard}
         keyExtractor={(item) => item.boothId}
-        numColumns={2} // Show two cards per row
-        columnWrapperStyle={styles.row}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFF',
-    padding: 10,
-  },
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  card: {
+  container: {
     flex: 1,
-    margin: 2,
-    padding: 8,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3.84,
-    elevation: 5,
-    maxWidth: '50%',
+    paddingTop: 10, // Ensure there is space at the top for the title
+    backgroundColor: '#F9F7FE',
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginLeft: 15,
+    marginVertical: 10,
+  },
+  card: {
+    marginBottom: 15,
+    marginHorizontal: 10,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    elevation: 3,
+    padding: 10,
     borderColor: '#A67EEC', // Border color
     borderWidth: 1, // Border width to make the color visible
   },
-  boothName: {
-    fontSize: 15,
+  headerContainer: {
+    flexDirection: 'row', // Align title and number horizontally
+    justifyContent: 'space-between', // Space them out
+    marginBottom: 10, // Space between header and card content
+  },
+  boothTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  infoContainer: {
+    flexDirection: 'row', // Align booth name/item and location/price in a row
+    justifyContent: 'space-between', // Space them out
+    alignItems: 'center', // Center align content vertically
+  },
+  leftSide: {
+    flex: 1,
+    justifyContent: 'flex-start', // Align to the left
+  },
+  rightSide: {
+    flex: 1,
+    justifyContent: 'flex-end', // Align to the right
+    alignItems: 'flex-end', // Align text to the right
+  },
+  poster: {
+    width: '100%',
+    height: 150,
+    resizeMode: 'cover',
+    borderRadius: 5,
     marginBottom: 10,
   },
-  row: {
-    justifyContent: 'space-between', // To ensure equal spacing between the two cards
+  boothName: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  cardButton: {
-    marginTop: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    backgroundColor: '#4CAF50',
-    borderRadius: 5,
+  item: {
+    fontSize: 14,
+    color: '#777',
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  priceRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  cardButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  location: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 5,
+  },
+  priceRange: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 5,
+  },
+  icon: {
+    marginRight: 5,
   },
 });

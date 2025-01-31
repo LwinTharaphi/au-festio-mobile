@@ -53,6 +53,7 @@ const ScheduleScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.pageTitle}>Schedule</Text>
       {schedules.length === 0 ? (
         <View style={styles.noDataContainer}>
           <Text style={styles.noDataText}>No performances available</Text>
@@ -78,7 +79,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#FFFF',
+    backgroundColor: '#F9F7FE',
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginLeft: 15,
+    marginVertical: 10,
   },
   tableHeader: {
     flexDirection: 'row',
