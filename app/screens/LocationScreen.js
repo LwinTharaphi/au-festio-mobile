@@ -15,6 +15,8 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 import ARNavigation from './ARNavigation';
 
 const { width, height } = Dimensions.get('window'); // Define width and height
@@ -141,6 +143,7 @@ export default function LocationScreen() {
   );
 
   const handleMarkerPress = (marker) => {
+    console.log('Marker pressed:', marker); // Debugging
     setSelectedMarker(marker);
     setShowDetails(true);
     Keyboard.dismiss();
@@ -214,6 +217,32 @@ export default function LocationScreen() {
 
   const removeAllFavorites = () => {
     setFavorites([]);
+  };
+
+  // Share Location Function
+  const shareLocation = async () => {
+    console.log('Share button clicked'); // Debugging
+    if (selectedMarker) {
+      console.log('Selected Marker:', selectedMarker); // Debugging
+      const locationText = `Location: ${selectedMarker.name}\nLatitude: ${selectedMarker.latitude}\nLongitude: ${selectedMarker.longitude}`;
+      console.log('Sharing text:', locationText); // Debugging
+  
+      try {
+        // Save the text to a file
+        const fileUri = FileSystem.documentDirectory + 'location.txt';
+        await FileSystem.writeAsStringAsync(fileUri, locationText);
+  
+        // Share the file
+        await Sharing.shareAsync(fileUri, {
+          dialogTitle: 'Share Location',
+        });
+        console.log('Sharing successful'); // Debugging
+      } catch (error) {
+        console.error('Sharing failed:', error); // Debugging
+      }
+    } else {
+      console.error('No marker selected'); // Debugging
+    }
   };
 
   const favoriteMarkers = markers.filter((marker) => favorites.includes(marker.id));
@@ -372,6 +401,13 @@ export default function LocationScreen() {
               <Text style={styles.favoriteButtonText}>
                 {favorites.includes(selectedMarker?.id) ? 'Remove Favorite' : 'Add to Favorites'}
               </Text>
+            </TouchableOpacity>
+            {/* Share Location Button */}
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={shareLocation}
+            >
+              <Text style={styles.shareButtonText}>Share Location</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.closeButton}
@@ -543,6 +579,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   favoriteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  shareButton: {
+    backgroundColor: 'purple',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  shareButtonText: {
     color: 'white',
     fontWeight: 'bold',
   },
