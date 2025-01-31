@@ -349,7 +349,7 @@ export default function EventDetailScreen({ route }) {
               setStudentId(data._id); // Use the _id from the response
 
               // Generate QR code data
-              const qrPayload = `${eventId},${data._id},${data.firebaseUID}`;
+              const qrPayload = `${eventId},${data._id}`;
               setQrData(qrPayload);
 
               // Create the QR code using the react-native-qrcode-svg component
