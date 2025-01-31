@@ -52,6 +52,7 @@ export default function EventDetailScreen({ route }) {
   const [qrData, setQrData] = useState(null);
   const [paymentQR, setPaymentQR] = useState(null);
   const [registeredDate, setRegisteredDate] = useState(null);
+  const [status, setStatus] = useState(null);
   // const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
   const faculties = [
     { label: 'VMES', value: 'VMES' },
@@ -79,7 +80,7 @@ export default function EventDetailScreen({ route }) {
         setLoading(false);
       }
     };
-  
+
     const fetchQRCodes = async () => {
       try {
         const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/qr`);
@@ -89,10 +90,10 @@ export default function EventDetailScreen({ route }) {
         console.error("Error fetching QR code:", error);
       }
     };
-  
+
     const fetchStudentDetails = async () => {
       if (!isRegistered || !user?.uid) return;
-  
+
       try {
         const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`);
         const data = await response.json();
@@ -100,6 +101,7 @@ export default function EventDetailScreen({ route }) {
         if (student) {
           setStudentId(student._id);
           setRegisteredDate(new Date(student.createdAt));
+          setStatus(student.status);
           // Fetch check-in QR code only if student exists
           // await fetchCheckInQR(student._id, user.uid);
           // console.log("Check in QR code data:", qrData);
@@ -108,20 +110,20 @@ export default function EventDetailScreen({ route }) {
         console.error("Error fetching student details:", error);
       }
     };
-  
+
     // Fetch all the data
     const fetchData = async () => {
       setLoading(true);
       try {
         // Fetch event details and QR codes in parallel
-        await Promise.all([fetchEventDetails(), fetchQRCodes(),fetchStudentDetails()]);
+        await Promise.all([fetchEventDetails(), fetchQRCodes(), fetchStudentDetails()]);
       } catch (error) {
         console.error("Error during data fetch:", error);
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, [organizerId, eventId, user, isRegistered]);
 
@@ -144,7 +146,7 @@ export default function EventDetailScreen({ route }) {
     };
     fetchCheckInQR();
   }, [studentId, user.uid]);
-  
+
 
   const currentDate = new Date().toLocaleDateString();
 
@@ -375,7 +377,7 @@ export default function EventDetailScreen({ route }) {
                 .catch((error) => {
                   console.error("Error posting QR code:", error);
                 });
-              
+
               onRegister && onRegister(); // Call the onRegister function to update the parent component
 
             } catch (error) {
@@ -511,11 +513,19 @@ export default function EventDetailScreen({ route }) {
               </View>
 
             </View>
-            <View style={{ marginTop: -25 }}>
+            <View>
               <Text style={styles.detailText}>Your check-in QR:</Text>
-              <TouchableOpacity onPress={() => setqrModalVisible(true)} style={styles.qrContainer}>
-                {qrData ? <QRCode value={qrData} size={100} /> : <Text>No QR code available</Text>}
-              </TouchableOpacity>
+              {!event.isPaid || status === "paid" ? (
+                <TouchableOpacity onPress={() => setqrModalVisible(true)} style={styles.qrContainer}>
+                  {qrData ? <QRCode value={qrData} size={100} /> : <Text>No QR code available</Text>}
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.pendingContainer}>
+                  <Text style={styles.pendingText}>
+                    Your check-in QR will be shown here once the organizer has approved your payment.
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
           <View style={styles.line} />
@@ -623,81 +633,81 @@ export default function EventDetailScreen({ route }) {
                   }}
                 >
 
-                <TextInput
-                  placeholder="ID"
-                  placeholderTextColor="#AAA"
-                  style={styles.input}
-                  value={formData.sid}
-                  onChangeText={(text) => setFormData({ ...formData, sid: text })}
-                />
-                <TextInput
-                  placeholder="Name"
-                  placeholderTextColor="#AAA"
-                  style={styles.input}
-                  value={formData.name}
-                  onChangeText={(text) => setFormData({ ...formData, name: text })}
-                />
-                <TextInput
-                  placeholder="Email"
-                  placeholderTextColor="#AAA"
-                  style={styles.input}
-                  keyboardType="email-address"
-                  value={formData.email}
-                  onChangeText={(text) => setFormData({ ...formData, email: text })}
-                />
-                <View style={[styles.pickerContainer, { height: 43 }]}>
- 
-                  <RNPickerSelect
-                    onValueChange={(value) => setFormData({ ...formData, faculty: value })}
-                    items={faculties}
-                    placeholder={{ label: 'Select Faculty', value: '' }}
-                    style={{
-                      inputIOS: {
-                        ...styles.picker,
-                        color: '#AAA', // Force black text for selected value
-                      },
-                      inputAndroid: styles.picker,
-                      placeholder: {
-                        color: '#AAA',
-                      },
-                      viewContainer: {
-                        borderWidth: 1,
-                        borderColor: '#ccc',
-                        borderRadius: 5,
-                        justifyContent: 'center',
-                      },
-                      iconContainer: {
-                        top: '50%', // Vertically center the icon
-                        transform: [{ translateY: -12 }], // Adjust based on icon size
-                      },
-                    }}
-                    value={formData.faculty}
-                    useNativeAndroidPickerStyle={false}
-                    Icon={() => <Icon name="arrow-drop-down" size={24} color="#AAA" />}
+                  <TextInput
+                    placeholder="ID"
+                    placeholderTextColor="#AAA"
+                    style={styles.input}
+                    value={formData.sid}
+                    onChangeText={(text) => setFormData({ ...formData, sid: text })}
                   />
-                </View>
+                  <TextInput
+                    placeholder="Name"
+                    placeholderTextColor="#AAA"
+                    style={styles.input}
+                    value={formData.name}
+                    onChangeText={(text) => setFormData({ ...formData, name: text })}
+                  />
+                  <TextInput
+                    placeholder="Email"
+                    placeholderTextColor="#AAA"
+                    style={styles.input}
+                    keyboardType="email-address"
+                    value={formData.email}
+                    onChangeText={(text) => setFormData({ ...formData, email: text })}
+                  />
+                  <View style={[styles.pickerContainer, { height: 43 }]}>
 
-                <TextInput
-                  placeholder="Phone"
-                  placeholderTextColor="#AAA"
-                  style={styles.input}
-                  keyboardType="phone-pad"
-                  value={formData.phone}
-                  onChangeText={(text) => setFormData({ ...formData, phone: text })}
-                />
-                {event.isPaid && (
-                  <>
-                    <TouchableOpacity
-                      onPress={handleImageClick}
-                      style={{ justifyContent: 'center', alignItems: 'center' }}
-                    >
-                      <SvgXml xml={paymentQR} width="180" height="180" />
-                    </TouchableOpacity>
+                    <RNPickerSelect
+                      onValueChange={(value) => setFormData({ ...formData, faculty: value })}
+                      items={faculties}
+                      placeholder={{ label: 'Select Faculty', value: '' }}
+                      style={{
+                        inputIOS: {
+                          ...styles.picker,
+                          color: '#AAA', // Force black text for selected value
+                        },
+                        inputAndroid: styles.picker,
+                        placeholder: {
+                          color: '#AAA',
+                        },
+                        viewContainer: {
+                          borderWidth: 1,
+                          borderColor: '#ccc',
+                          borderRadius: 5,
+                          justifyContent: 'center',
+                        },
+                        iconContainer: {
+                          top: '50%', // Vertically center the icon
+                          transform: [{ translateY: -12 }], // Adjust based on icon size
+                        },
+                      }}
+                      value={formData.faculty}
+                      useNativeAndroidPickerStyle={false}
+                      Icon={() => <Icon name="arrow-drop-down" size={24} color="#AAA" />}
+                    />
+                  </View>
 
-                    {/* <Button title="Upload Payment Receipt" onPress={handleReceiptUpload} />
+                  <TextInput
+                    placeholder="Phone"
+                    placeholderTextColor="#AAA"
+                    style={styles.input}
+                    keyboardType="phone-pad"
+                    value={formData.phone}
+                    onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                  />
+                  {event.isPaid && (
+                    <>
+                      <TouchableOpacity
+                        onPress={handleImageClick}
+                        style={{ justifyContent: 'center', alignItems: 'center' }}
+                      >
+                        <SvgXml xml={paymentQR} width="180" height="180" />
+                      </TouchableOpacity>
+
+                      {/* <Button title="Upload Payment Receipt" onPress={handleReceiptUpload} />
                   {formData.receipt && <Text>Uploaded: {formData.receipt.name}</Text>} */}
 
-                    {/* <View style={[styles.pickerContainer, { height: 43 }]}>
+                      {/* <View style={[styles.pickerContainer, { height: 43 }]}>
                     <TouchableOpacity style={styles.picker} onPress={handleReceiptUpload}>
                       {formData.receipt ? (
                         <Text style={styles.uploadedText}>{formData.receipt.fileName || 'Receipt Uploaded'}</Text>
@@ -713,86 +723,86 @@ export default function EventDetailScreen({ route }) {
                     )}
                   </View> */}
 
-                    {/* Image Upload Button */}
-                    <TouchableOpacity
-                      onPress={handleImageUpload}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        padding: 3,
-                        justifyContent: 'center',
-                        backgroundColor: '#E8F5E9',
-                        borderRadius: 10,
-                        borderWidth: 1,
-                        borderColor: '#4CAF50',
-                        marginVertical: 5,
-                      }}
-                    >
-                      <Icon name="cloud-upload" size={35} color="#4CAF50" />
-                      <Text
+                      {/* Image Upload Button */}
+                      <TouchableOpacity
+                        onPress={handleImageUpload}
                         style={{
-                          marginLeft: 10,
-                          fontSize: 12,
-                          fontWeight: 'bold',
-                          color: '#4CAF50',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          padding: 3,
+                          justifyContent: 'center',
+                          backgroundColor: '#E8F5E9',
+                          borderRadius: 10,
+                          borderWidth: 1,
+                          borderColor: '#4CAF50',
+                          marginVertical: 5,
                         }}
                       >
-                        Upload Payment Screenshot
-                      </Text>
-                    </TouchableOpacity>
+                        <Icon name="cloud-upload" size={35} color="#4CAF50" />
+                        <Text
+                          style={{
+                            marginLeft: 10,
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            color: '#4CAF50',
+                          }}
+                        >
+                          Upload Payment Screenshot
+                        </Text>
+                      </TouchableOpacity>
 
-                    {formData.paymentScreenshot && (
-                      <View style={styles.uploadedImageContainer}>
-                        <Image source={{ uri: formData.paymentScreenshot.uri }} style={styles.uploadedImage} />
-                        <TouchableOpacity onPress={removeImage}>
-                          <Text style={styles.removeText}>Remove Image</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-
-                    {/* Modal for full-screen image */}
-                    <Modal
-                      visible={qrModalVisible}
-                      transparent={true}
-                      onRequestClose={handleImageClose}
-                    >
-                      <TouchableWithoutFeedback onPress={handleImageClose}>
-                        <View style={styles.modalContainer}>
-                          <SvgXml xml={paymentQR} width="100%" height="100%" />
+                      {formData.paymentScreenshot && (
+                        <View style={styles.uploadedImageContainer}>
+                          <Image source={{ uri: formData.paymentScreenshot.uri }} style={styles.uploadedImage} />
+                          <TouchableOpacity onPress={removeImage}>
+                            <Text style={styles.removeText}>Remove Image</Text>
+                          </TouchableOpacity>
                         </View>
-                      </TouchableWithoutFeedback>
-                    </Modal>
-                  </>
-                )}
-                <View>
-                  <Text style={styles.policyText}>By registering, you agree to the terms and conditions of the event.</Text>
-                  <Text style={styles.policyText}>
-                    Refund Policy:
-                    {event.refundPolicy && event.refundPolicy.length > 0 ? (
-                      event.refundPolicy.map((policy, index) => {
-                        let policyText = ` ${policy.percentage}% in ${policy.days} days`;
-                        // Add comma except for the last policy
-                        if (index < event.refundPolicy.length - 1) {
-                          policyText += ', ';
-                        }
-                        return policyText;
-                      })
-                    ) : (
-                      " No Refund Policy"
-                    )}
-                    {event.refundPolicy && event.refundPolicy.length > 0 && (
-                      ` and no refund after ${event.refundPolicy[event.refundPolicy.length - 1].days} days.`
-                    )}
-                  </Text>
-                </View>
-                <View style={styles.buttonContainer}>
-                  <View style={styles.buttonWrapper}>
-                    <Button title="Cancel" onPress={() => setModalVisible(false)} />
+                      )}
+
+                      {/* Modal for full-screen image */}
+                      <Modal
+                        visible={qrModalVisible}
+                        transparent={true}
+                        onRequestClose={handleImageClose}
+                      >
+                        <TouchableWithoutFeedback onPress={handleImageClose}>
+                          <View style={styles.modalContainer}>
+                            <SvgXml xml={paymentQR} width="100%" height="100%" />
+                          </View>
+                        </TouchableWithoutFeedback>
+                      </Modal>
+                    </>
+                  )}
+                  <View>
+                    <Text style={styles.policyText}>By registering, you agree to the terms and conditions of the event.</Text>
+                    <Text style={styles.policyText}>
+                      Refund Policy:
+                      {event.refundPolicy && event.refundPolicy.length > 0 ? (
+                        event.refundPolicy.map((policy, index) => {
+                          let policyText = ` ${policy.percentage}% in ${policy.days} days`;
+                          // Add comma except for the last policy
+                          if (index < event.refundPolicy.length - 1) {
+                            policyText += ', ';
+                          }
+                          return policyText;
+                        })
+                      ) : (
+                        " No Refund Policy"
+                      )}
+                      {event.refundPolicy && event.refundPolicy.length > 0 && (
+                        ` and no refund after ${event.refundPolicy[event.refundPolicy.length - 1].days} days.`
+                      )}
+                    </Text>
                   </View>
-                  <View style={styles.buttonWrapper}>
-                    <Button title="Confirm" onPress={handleConfirm} />
+                  <View style={styles.buttonContainer}>
+                    <View style={styles.buttonWrapper}>
+                      <Button title="Cancel" onPress={() => setModalVisible(false)} />
+                    </View>
+                    <View style={styles.buttonWrapper}>
+                      <Button title="Confirm" onPress={handleConfirm} />
+                    </View>
                   </View>
-                </View>
                 </Animated.View>
               </View>
             </View>
@@ -806,11 +816,11 @@ export default function EventDetailScreen({ route }) {
 const styles = StyleSheet.create({
   container: {
     paddingTop: 25,
-    paddingBottom: 150,
+    paddingBottom: 250,
     paddingLeft: 20,
     paddingRight: 20,
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F9F7FE',
   },
   loaderContainer: {
     flex: 1,
@@ -984,5 +994,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 10,
     textAlign: "center",
+  },
+  pendingContainer: {
+    alignSelf: "flex-end",
+    marginTop: 10,
+    width: 100,
+    height: 100,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    backgroundColor: "#f9f9f9",
+    padding: 5,
+  },
+  pendingText: {
+    fontSize: 10, // Adjust text size to fit inside the box
+    textAlign: "center",
+    color: "#555",
   },
 });
