@@ -26,7 +26,12 @@
       "NSCameraUsageDescription": "This app requires camera access to provide AR navigation.",
       "NSLocationWhenInUseUsageDescription": "This app requires your location to provide navigation assistance.",
       "NSUserTrackingUsageDescription": "This app uses your data to provide a better user experience.", // Corrected key name
-      "UIBackgroundModes": ["remote-notification"]
+      "UIBackgroundModes": ["remote-notification"],
+      "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["reactnativejs.au-festio-mobile"]
+          }
+        ]
     }
   },
     "android": {
@@ -41,6 +46,17 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "NOTIFICATIONS"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "reactnativejs.au.festio.mobile"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {

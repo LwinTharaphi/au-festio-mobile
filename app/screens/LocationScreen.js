@@ -62,6 +62,7 @@ const markers = [
   {id: 34, name: 'Graduate Studies', latitude: 13.612840208801865, longitude: 100.83623324263411},
 ];
 
+
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371e3; // Earth radius in meters
   const φ1 = (lat1 * Math.PI) / 180;
@@ -137,6 +138,34 @@ export default function LocationScreen() {
       setLocation(location.coords);
       setIsLoading(false);
     })();
+  }, []);
+
+  useEffect(() => {
+    const handleDeepLink = (event) => {
+      const { url } = event;
+      const parsedUrl = Linking.parse(url);
+      const { queryParams } = parsedUrl;
+
+      if (queryParams && queryParams.latitude && queryParams.longitude) {
+        const sharedLocation = {
+          latitude: parseFloat(queryParams.latitude),
+          longitude: parseFloat(queryParams.longitude),
+        };
+
+        setSelectedMarker({
+          name: 'Shared Location',
+          latitude: sharedLocation.latitude,
+          longitude: sharedLocation.longitude,
+        });
+        setShowDetails(true);
+      }
+    };
+
+    Linking.addEventListener('url', handleDeepLink);
+
+    return () => {
+      Linking.removeEventListener('url', handleDeepLink);
+    };
   }, []);
 
   const handleSearch = (query) => setSearchQuery(query);
@@ -285,16 +314,20 @@ export default function LocationScreen() {
                 android: `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`,
               });
 
+              const locationText = `Check out my current location: ${url}`;
+
               try {
-                await Linking.openURL(url);
+                const fileUri = FileSystem.documentDirectory + 'current_location.txt';
+                await FileSystem.writeAsStringAsync(fileUri, locationText);
+                await Sharing.shareAsync(fileUri, { dialogTitle: 'Share Current Location' });
                 Toast.show({
                   type: 'success',
-                  text1: 'Opened map successfully!',
+                  text1: 'Current location shared successfully!',
                 });
               } catch (error) {
                 Toast.show({
                   type: 'error',
-                  text1: 'Error opening map.',
+                  text1: 'Failed to share current location.',
                 });
               }
             },
