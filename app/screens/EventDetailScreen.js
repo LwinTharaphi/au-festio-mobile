@@ -53,6 +53,7 @@ export default function EventDetailScreen({ route }) {
   const [paymentQR, setPaymentQR] = useState(null);
   const [registeredDate, setRegisteredDate] = useState(null);
   const [status, setStatus] = useState(null);
+  const [refundStatus, setRefundStatus] = useState(null);
   // const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
   const faculties = [
     { label: 'VMES', value: 'VMES' },
@@ -102,6 +103,7 @@ export default function EventDetailScreen({ route }) {
           setStudentId(student._id);
           setRegisteredDate(new Date(student.createdAt));
           setStatus(student.status);
+          setRefundStatus(student.refundStatus);
           // Fetch check-in QR code only if student exists
           // await fetchCheckInQR(student._id, user.uid);
           // console.log("Check in QR code data:", qrData);
@@ -460,6 +462,11 @@ export default function EventDetailScreen({ route }) {
       ]
     );
   };
+  // useEffect(() => {
+  //   if (refundStatus === "refunded") {
+  //     setIsRegistered(false);
+  //   }
+  // }, [refundStatus]);
 
 
   if (loading) {
@@ -515,7 +522,11 @@ export default function EventDetailScreen({ route }) {
             </View>
             <View>
               <Text style={styles.detailText}>Your check-in QR:</Text>
-              {!event.isPaid || status === "paid" ? (
+              {refundStatus === "requested" ? (
+                <View style={styles.pendingContainer}>
+                  <Text style={styles.pendingText}>Check-in QR not available anymore</Text>
+                </View>
+              ) : !event.isPaid || status === "paid" ? (
                 <TouchableOpacity onPress={() => setqrModalVisible(true)} style={styles.qrContainer}>
                   {qrData ? <QRCode value={qrData} size={100} /> : <Text>No QR code available</Text>}
                 </TouchableOpacity>
@@ -545,8 +556,21 @@ export default function EventDetailScreen({ route }) {
 
           {/* Register/Cancel Button */}
           <Button
-            title={isRegistered ? "Cancel Registration" : "Register"}
-            onPress={isRegistered ? handleCancelRegistration : handleRegister}
+            title={
+              refundStatus === "requested"
+                ? "Refund Pending"
+                : isRegistered
+                  ? "Cancel Registration"
+                  : "Register"
+            }
+            onPress={
+              refundStatus === "requested"
+                ? null // Disable button action if refund is pending
+                : isRegistered
+                  ? handleCancelRegistration
+                  : handleRegister
+            }
+            disabled={refundStatus === "requested"} // Optionally disable button
           />
         </View>
       </ScrollView>
@@ -703,25 +727,6 @@ export default function EventDetailScreen({ route }) {
                       >
                         <SvgXml xml={paymentQR} width="180" height="180" />
                       </TouchableOpacity>
-
-                      {/* <Button title="Upload Payment Receipt" onPress={handleReceiptUpload} />
-                  {formData.receipt && <Text>Uploaded: {formData.receipt.name}</Text>} */}
-
-                      {/* <View style={[styles.pickerContainer, { height: 43 }]}>
-                    <TouchableOpacity style={styles.picker} onPress={handleReceiptUpload}>
-                      {formData.receipt ? (
-                        <Text style={styles.uploadedText}>{formData.receipt.fileName || 'Receipt Uploaded'}</Text>
-                      ) : (
-                        <Text style={styles.placeholder}>Upload Receipt</Text>
-                      )}
-                      <Icon name="cloud-upload" size={24} color="#4CAF50" style={styles.icon} />
-                    </TouchableOpacity>
-                    {formData.receipt && (
-                      <View style={styles.uploadedContainer}>
-                        <Text style={styles.uploadedText}>Uploaded: {formData.receipt.fileName}</Text>
-                      </View>
-                    )}
-                  </View> */}
 
                       {/* Image Upload Button */}
                       <TouchableOpacity
