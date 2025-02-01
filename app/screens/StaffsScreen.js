@@ -36,6 +36,8 @@ export default function StaffRolesScreen({ route }) {
   });
   const [registeredRole, setRegisteredRole] = useState(null);
   const [staffId, setStaffId] = useState(null);
+  const [status, setStatus] = useState(null);
+  const [registrationDate, setRegistrationDate] = useState(null);
   const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
 
   const user = auth.currentUser;
@@ -72,15 +74,26 @@ export default function StaffRolesScreen({ route }) {
         setStaffData(currentUserStaff);
         setRegisteredRole(currentUserStaff?.role._id);
         setStaffId(currentUserStaff?._id);
+        setStatus(currentUserStaff?.status);
+        if (currentUserStaff?.createdAt) {
+          const parsedDate = new Date(currentUserStaff.createdAt);
+          if (!isNaN(parsedDate)) {
+            setRegistrationDate(parsedDate);
+          } else {
+            console.error("Invalid date format:", currentUserStaff.createdAt);
+          }
+        } else {
+          console.warn("createdAt is missing for currentUserStaff");
+        }
+        
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
-  }, [organizerId, eventId]);
+  }, [organizerId, eventId, user]);
 
   const handleRegister = (role) => {
     if (registeredRole) {
@@ -175,7 +188,7 @@ export default function StaffRolesScreen({ route }) {
           text: "OK",
           onPress: () => {
             const firebaseUID = user?.uid;
-            const payload = { ...formData, role: formData.role, event,firebaseUID };
+            const payload = { ...formData, role: formData.role, event, firebaseUID };
             fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -266,30 +279,53 @@ export default function StaffRolesScreen({ route }) {
     const displaySpotsLeft = Math.max(spotsLeft, 0);
     const isSpotsAvailable = displaySpotsLeft > 0;
 
-    // Check if the current user is already registered for this role
-    // const isUserRegistered = staffData.some(staff => staff.firebaseUID === user?.uid && staff.role._id === item._id);
+    // Determine button text based on status
+    let buttonText = "Register";
+    if (registeredRole === item._id) {
+      if (status === "not viewed") {
+        buttonText = "Pending";
+      } else if (status === "approved") {
+        buttonText = "Registered";
+      } else {
+        buttonText = "Cancel";
+      }
+    }
+    // Check if the user can cancel registration
+    const currentDate = new Date();
+    const timeDiff = Math.abs(currentDate - registrationDate);
+    const daysSinceRegistration = timeDiff / (1000 * 60 * 60 * 24);
+    const canCancel = daysSinceRegistration <= 1;
 
     return (
       <View style={styles.card}>
         <Text style={styles.roleName}>{item.name}</Text>
         <Text>Count: {item.count}</Text>
         <Text>Spots Left: {displaySpotsLeft}</Text>
-        {registeredRole === item._id ? (
-          <TouchableOpacity style={styles.registerButton} onPress={handleCancelRegistration}>
-            <Text style={styles.registerButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.registerButton, !isSpotsAvailable && { opacity: 0.7 }]}
-            onPress={() => isSpotsAvailable && handleRegister(item._id)}
-            disabled={!isSpotsAvailable}
-          >
-            <Text style={styles.registerButtonText}>Register</Text>
+
+        <TouchableOpacity
+          style={[
+            styles.registerButton,
+            !isSpotsAvailable && buttonText === "Register" && { opacity: 0.7 }
+          ]}
+          onPress={() =>
+            registeredRole === item._id
+              ? handleCancelRegistration()
+              : isSpotsAvailable && handleRegister(item._id)
+          }
+          disabled={buttonText === "Registered" || buttonText === "Pending" || (buttonText === "Register" && !isSpotsAvailable)}
+        >
+          <Text style={styles.registerButtonText}>{buttonText}</Text>
+        </TouchableOpacity>
+
+        {registeredRole === item._id && buttonText !== "Register" && canCancel && (
+          <TouchableOpacity onPress={handleCancelRegistration}>
+            <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         )}
       </View>
     );
-  }, [registeredRole, handleCancelRegistration, handleRegister]);
+  }, [registeredRole, status, handleCancelRegistration, handleRegister]);
+
 
   if (loading) {
     return (
@@ -380,6 +416,7 @@ export default function StaffRolesScreen({ route }) {
                       ))}
                     </Picker>
                   </View>
+                  <Text style={styles.policyText}>Note: You can only cancel your registration within three days. </Text>
                   <View style={styles.buttonContainer}>
                     <View style={styles.buttonWrapper}>
                       <Button title="Cancel" onPress={() => setModalVisible(false)} />
@@ -451,6 +488,18 @@ const styles = StyleSheet.create({
   registerButtonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  cancelText: {
+    fontSize: 12,
+    color: '#A67EEC',
+    textDecorationLine: "underline",
+    textAlign: "center"
+  },
+  policyText: {
+    fontSize: 10, // small font size
+    color: 'red', // red color
+    marginTop: 10, // optional, adds some spacing above the text
+    marginBottom: 10, // optional, adds some spacing
   },
   modalContainer: {
     flex: 1,

@@ -39,9 +39,14 @@ const RegistrationSuccessScreen = () => {
         <MaterialIcons name="check-circle-outline" size={150} color="green" />
       </View>
       {event && event.eventName ? (  // Ensure event data is available
+      <View style={[styles.successIconContainer, { marginBottom: 20 }]}>
         <Text style={styles.successMessage}>
-          You have registered successfully for {event.eventName}.
+          We have received your registration for {event.eventName}.
         </Text>
+        <Text style={styles.successMessage}>
+        We will review and notify you shortly.
+      </Text>
+      </View>
       ) : (
         <Text style={styles.successMessage}>Event details not available.</Text>  // Fallback message
       )}
