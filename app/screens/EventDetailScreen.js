@@ -93,25 +93,32 @@ export default function EventDetailScreen({ route }) {
     };
 
     const fetchStudentDetails = async () => {
-      if (!isRegistered || !user?.uid) return;
-
+      if (!isRegistered || !user?.uid) return;  
       try {
         const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`);
         const data = await response.json();
-        const student = data.find((student) => student.firebaseUID === user.uid);
-        if (student) {
-          setStudentId(student._id);
-          setRegisteredDate(new Date(student.createdAt));
-          setStatus(student.status);
-          setRefundStatus(student.refundStatus);
+    
+        // Sort by createdAt date to get the latest registration
+        const sortedData = data
+          .filter((student) => student.firebaseUID === user.uid) // Filter by user ID
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by latest first
+    
+        // If there is any student data, set the latest one
+        if (sortedData.length > 0) {
+          const latestStudent = sortedData[0]; // Get the latest registration
+          setStudentId(latestStudent._id);
+          setRegisteredDate(new Date(latestStudent.createdAt));
+          setStatus(latestStudent.status);
+          setRefundStatus(latestStudent.refundStatus);
           // Fetch check-in QR code only if student exists
-          // await fetchCheckInQR(student._id, user.uid);
+          // await fetchCheckInQR(latestStudent._id, user.uid);
           // console.log("Check in QR code data:", qrData);
         }
       } catch (error) {
         console.error("Error fetching student details:", error);
       }
     };
+    
 
     // Fetch all the data
     const fetchData = async () => {

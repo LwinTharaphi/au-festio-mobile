@@ -38,19 +38,33 @@ export async function fetchEvents(firebaseUserId, page = 1, limit = 10) {
   }
 }
 
-
 export async function fetchEventByFirebaseUserId(organizerId, eventId, firebaseUserId) {
   try {
     const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`);
-    if (!response.ok) throw new Error('Failed to fetch event students');
-    const students = await response.json();
-    // console.log("students",students);
+    
+    if (!response.ok) throw new Error("Failed to fetch event students");
 
-    // Ensure students array exists and is an array
-    return Array.isArray(students) && students.some((student) => student.firebaseUID === firebaseUserId);
+    const students = await response.json();
+
+    // Ensure students array exists
+    if (!Array.isArray(students)) return false;
+
+    // Get all student records for the user
+    const userRegistrations = students
+      .filter(student => student.firebaseUID === firebaseUserId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by latest first
+
+    if (userRegistrations.length === 0) {
+      return false; // No records, allow registration
+    }
+
+    const latestStudent = userRegistrations[0]; // Get the latest student record
+
+    // If the latest record is not refunded, return true (already registered)
+    return latestStudent.refundStatus !== "refunded";
   } catch (error) {
     console.error(error);
-    return false;  // Return false if any error occurs
+    return false; // Return false if any error occurs
   }
 }
 
