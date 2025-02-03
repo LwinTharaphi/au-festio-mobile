@@ -23,7 +23,7 @@ import {
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { auth } from '../config/firebase'
-import { SvgXml } from 'react-native-svg';
+import Svg, { SvgXml } from 'react-native-svg';
 import { uploadFile, deleteImage } from '../services/aws';
 import { AWS_BUCKET_NAME, AWS_REGION } from '@env';
 
@@ -51,6 +51,7 @@ export default function EventDetailScreen({ route }) {
   const [studentId, setStudentId] = useState(null); // State to store student ID
   const [qrData, setQrData] = useState(null);
   const [paymentQR, setPaymentQR] = useState(null);
+  const [qrType, setQrType] = useState('');
   const [registeredDate, setRegisteredDate] = useState(null);
   const [status, setStatus] = useState(null);
   const [refundStatus, setRefundStatus] = useState(null);
@@ -86,7 +87,8 @@ export default function EventDetailScreen({ route }) {
       try {
         const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/qr`);
         const data = await response.json();
-        setPaymentQR(data.qrSvg);
+        setPaymentQR(`${data.qrSvg}`);
+        console.log("Payment QR code data:", data.qrSvg);
       } catch (error) {
         console.error("Error fetching QR code:", error);
       }
@@ -195,6 +197,11 @@ export default function EventDetailScreen({ route }) {
       console.log('Image uploaded:', result.assets[0]);
       setFormData({ ...formData, paymentScreenshot: selectedImage });
     }
+  };
+
+  const openQrModal = (type) => {
+    setQrType(type);
+    setqrModalVisible(true);
   };
 
   const removeImage = async () => {
@@ -529,7 +536,7 @@ export default function EventDetailScreen({ route }) {
                   <Text style={styles.pendingText}>Check-in QR not available anymore</Text>
                 </View>
               ) : !event.isPaid || status === "paid" ? (
-                <TouchableOpacity onPress={() => setqrModalVisible(true)} style={styles.qrContainer}>
+                <TouchableOpacity onPress={() => openQrModal('checkin')} style={styles.qrContainer}>
                   {qrData ? <QRCode value={qrData} size={100} /> : <Text>No QR code available</Text>}
                 </TouchableOpacity>
               ) : (
@@ -551,7 +558,13 @@ export default function EventDetailScreen({ route }) {
           >
             <TouchableWithoutFeedback onPress={() => setqrModalVisible(false)}>
               <View style={styles.modalOverlay}>
-                <QRCode value={qrData} size={300} />
+                {qrType === 'checkin' ? (
+                  <QRCode value={qrData} size={300} />
+                ): (
+                  // <QRCode value={paymentQR} size={300} />
+                  // <SvgXml xml={paymentQR} width="100%" height="100%" />
+                  <Image source={{ uri: paymentQR }} style={{width: 200, height: 200}} />
+                )}
               </View>
             </TouchableWithoutFeedback>
           </Modal>
@@ -740,7 +753,9 @@ export default function EventDetailScreen({ route }) {
                         onPress={handleImageClick}
                         style={{ justifyContent: 'center', alignItems: 'center' }}
                       >
-                        <SvgXml xml={paymentQR} width="180" height="180" />
+                        {/* <SvgXml xml={paymentQR} width="180" height="180" /> */}
+                        <Image source={{ uri: paymentQR }} style={{width: 180, height: 180}} />
+                        {/* <QRCode value={paymentQR} size={300} /> */}
                       </TouchableOpacity>
 
                       {/* Image Upload Button */}
@@ -788,7 +803,9 @@ export default function EventDetailScreen({ route }) {
                       >
                         <TouchableWithoutFeedback onPress={handleImageClose}>
                           <View style={styles.modalContainer}>
-                            <SvgXml xml={paymentQR} width="100%" height="100%" />
+                            {/* <SvgXml xml={paymentQR} width="100%" height="100%" /> */}
+                            <Image source={{ uri: paymentQR }} style={{width: 400, height: 400}} />
+                            {/* <QRCode value={paymentQR} size={300} /> */}
                           </View>
                         </TouchableWithoutFeedback>
                       </Modal>
