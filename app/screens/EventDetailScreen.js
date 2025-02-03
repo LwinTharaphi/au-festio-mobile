@@ -93,16 +93,16 @@ export default function EventDetailScreen({ route }) {
     };
 
     const fetchStudentDetails = async () => {
-      if (!isRegistered || !user?.uid) return;  
+      if (!isRegistered || !user?.uid) return;
       try {
         const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`);
         const data = await response.json();
-    
+
         // Sort by createdAt date to get the latest registration
         const sortedData = data
           .filter((student) => student.firebaseUID === user.uid) // Filter by user ID
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by latest first
-    
+
         // If there is any student data, set the latest one
         if (sortedData.length > 0) {
           const latestStudent = sortedData[0]; // Get the latest registration
@@ -118,7 +118,7 @@ export default function EventDetailScreen({ route }) {
         console.error("Error fetching student details:", error);
       }
     };
-    
+
 
     // Fetch all the data
     const fetchData = async () => {
@@ -422,7 +422,7 @@ export default function EventDetailScreen({ route }) {
             const diffInDays = Math.floor(diffInTime / (1000 * 60 * 60 * 24));
             let cancellationMessage = "Your registration has been cancelled.";
 
-            if (event.isPaid) {
+            if (event.isPaid && event.refundPolicy && event.refundPolicy.length > 0) {
               const sortedRefundPolicy = event.refundPolicy.sort((a, b) => a.days - b.days);
               const applicablePolicy = sortedRefundPolicy.find((policy) => diffInDays <= policy.days);
 
@@ -469,11 +469,6 @@ export default function EventDetailScreen({ route }) {
       ]
     );
   };
-  // useEffect(() => {
-  //   if (refundStatus === "refunded") {
-  //     setIsRegistered(false);
-  //   }
-  // }, [refundStatus]);
 
 
   if (loading) {
@@ -583,7 +578,12 @@ export default function EventDetailScreen({ route }) {
       </ScrollView>
     );
   }
+  const today = new Date();
+  const eventDate = new Date(event.createdAt);
+  const isRegistrationClosed = new Date() > new Date(event.registerationDate);
 
+  // Calculate the time difference in hours
+  const timeDifference = (today - eventDate) / (1000 * 60 * 60);
   return (
     <ScrollView>
       <View style={styles.container}>
@@ -612,7 +612,7 @@ export default function EventDetailScreen({ route }) {
 
           {/* Registration Deadline */}
           <Text style={styles.detail}>
-            <Icon name="calendar-today" size={20} color="#555" /> Registration Date: {new Date(event.registerationDate).toLocaleDateString()}
+            <Icon name="calendar-today" size={20} color="#555" /> Registration Deadline: {new Date(event.registerationDate).toLocaleDateString()}
           </Text>
 
           {/* Event Start Time */}
@@ -630,10 +630,17 @@ export default function EventDetailScreen({ route }) {
             {event.isPaid ? `Fees: ${event.price || 'N/A'} TBH` : 'It is a free event'}
           </Text>
 
-
-          <Text style={styles.policyText}>
-            You get {event.discount}% early bird discount if you register on {new Date(event.registerationDate).toLocaleDateString()}.
-          </Text>
+          {event.discount ? (
+            timeDifference < 24 ? (
+              <Text style={styles.policyText}>
+                You get {event.discount}% early bird discount if you register today!!
+              </Text>
+            ) : (
+              <Text style={styles.policyText}>The early bird discount period has expired.</Text>
+            )
+          ) : (
+            <Text style={styles.policyText}>No discount applied for this event.</Text>
+          )}
 
         </View>
 
@@ -641,6 +648,7 @@ export default function EventDetailScreen({ route }) {
         <Button
           title={isRegistered ? "Cancel Registration" : "Register"}
           onPress={isRegistered ? handleCancelRegistration : handleRegister}
+          disabled={!isRegistered && isRegistrationClosed} // Disable only for registration after the deadline
         />
         {/* Registration Modal */}
         <Modal
