@@ -495,11 +495,13 @@ export default function LocationScreen() {
               <Text style={styles.clearDirectionsButtonText}>Clear Directions</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.arButton}
-              onPress={handleARNavigation}
-            >
-              <Text style={styles.arButtonText}>Start AR Navigation</Text>
-            </TouchableOpacity>
+                style={styles.arButton}
+                onPress={handleARNavigation}
+                disabled={!selectedMarker}
+              >
+                <Ionicons name="camera" size={20} color="white" />
+                <Text style={styles.arButtonText}>Start AR Navigation</Text>
+              </TouchableOpacity>
             <TouchableOpacity
               style={styles.favoriteButton}
               onPress={() => toggleFavorite(selectedMarker)}
@@ -697,6 +699,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
   },
   arButtonText: {
     color: 'white',

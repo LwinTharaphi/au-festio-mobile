@@ -1,94 +1,176 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
-import { Camera } from 'expo-camera';
-import MapView, { Marker } from 'react-native-maps';
+import { StyleSheet, View, Text, Image, Dimensions, TouchableOpacity, Animated } from 'react-native';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
+import * as Sensors from 'expo-sensors';
+import { getGreatCircleBearing, getDistance } from 'geolib';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path, Circle } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
 
-const { width, height } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const CENTER_X = SCREEN_WIDTH / 2;
+const CENTER_Y = SCREEN_HEIGHT / 2;
 
 const ARNavigation = ({ destination, onBack }) => {
-  const [hasPermission, setHasPermission] = useState(null);
+  const [facing, setFacing] = useState('back');
+  const [permission, requestPermission] = useCameraPermissions();
   const [location, setLocation] = useState(null);
   const [heading, setHeading] = useState(0);
+  const [distance, setDistance] = useState(0);
+  const rotateAnim = useState(new Animated.Value(0))[0];
+  const [sound, setSound] = useState(null);
+
+  // Load sound effect
+  async function loadSound() {
+    const { sound } = await Audio.Sound.createAsync(
+      require('/Users/thaemyatnoehtut/au-festio-mobile/assets/sound/navigation_beep.mp3')
+    );
+    setSound(sound);
+  }
+
+  useEffect(() => {
+    loadSound();
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
+      const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
+      
+      Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.BestForNavigation },
+        (loc) => {
+          setLocation(loc.coords);
+          const newDistance = getDistance(loc.coords, destination);
+          setDistance(newDistance);
+          
+          // Trigger haptic feedback when close
+          if (newDistance < 20) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            if (sound) {
+              sound.replayAsync();
+            }
+          }
+        }
+      );
 
-      let { status: locationStatus } = await Location.requestPermissionsAsync();
-      if (locationStatus !== 'granted') {
-        console.error('Permission to access location was denied');
-        return;
+      Sensors.Magnetometer.addListener((data) => {
+        const { x, y } = data;
+        let newHeading = Math.atan2(y, x) * (180 / Math.PI);
+        newHeading = (newHeading + 360) % 360;
+        setHeading(newHeading);
+      });
+
+      if (__DEV__) {
+        Location.setMockLocationAsync({
+          latitude: destination.latitude,
+          longitude: destination.longitude,
+        });
       }
-
-      Location.watchPositionAsync({
-        accuracy: Location.Accuracy.High,
-        distanceInterval: 1,
-      }, (newLocation) => {
-        setLocation(newLocation.coords);
-      });
-
-      Location.watchHeadingAsync((newHeading) => {
-        setHeading(newHeading.trueHeading);
-      });
     })();
-  }, []);
 
-  if (hasPermission === null) {
-    return <View />;
-  }
-  if (hasPermission === false) {
-    return <Text>No access to camera</Text>;
-  }
+    return () => {
+      Sensors.Magnetometer.removeAllListeners();
+    };
+  }, [destination]);
 
-  const calculateBearing = (start, end) => {
-    start.lat = parseFloat(start.latitude);
-    start.lng = parseFloat(start.longitude);
-    end.lat = parseFloat(end.latitude);
-    end.lng = parseFloat(end.longitude);
+  useEffect(() => {
+    if (location && heading !== null && destination) {
+      const bearing = getGreatCircleBearing(
+        { latitude: location.latitude, longitude: location.longitude },
+        destination
+      );
+      
+      const relativeAngle = (bearing - heading + 360) % 360;
+      
+      Animated.spring(rotateAnim, {
+        toValue: relativeAngle,
+        useNativeDriver: true,
+        friction: 5,
+      }).start();
+    }
+  }, [location, heading, destination]);
 
-    const dLon = (end.lng - start.lng);
-    const y = Math.sin(dLon) * Math.cos(end.lat);
-    const x = Math.cos(start.lat) * Math.sin(end.lat) - Math.sin(start.lat) * Math.cos(end.lat) * Math.cos(dLon);
-    let brng = Math.atan2(y, x);
-    brng = brng * (180 / Math.PI);
-    brng = (brng + 360) % 360;
-    return brng;
+  const getArrowColor = () => {
+    if (distance < 20) return '#00FF00'; // Green when close
+    if (distance < 50) return '#FFA500'; // Orange when medium
+    return '#FF0000'; // Red when far
   };
 
-  const bearing = location ? calculateBearing(location, destination) : 0;
-  const rotation = (bearing - heading + 360) % 360;
+  if (!permission) return <View />;
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>We need your permission to show the camera</Text>
+        <Button onPress={requestPermission} title="Grant Permission" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* AR Camera View */}
-      <Camera style={styles.camera} type={Camera.Constants.Type.back}>
-        <View style={styles.arrowContainer}>
-          <Text style={[styles.arrow, { transform: [{ rotate: `${rotation}deg` }] }]}>{'↑'}</Text>
+      <CameraView style={styles.camera} facing={facing}>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
+
+        {/* Compass Ring */}
+        <Svg height="300" width="300" style={styles.compass}>
+          <Circle
+            cx="150"
+            cy="150"
+            r="140"
+            stroke="white"
+            strokeWidth="2"
+            fill="transparent"
+          />
+        </Svg>
+
+        {/* Navigation Arrow */}
+        <Animated.View style={[styles.arrowContainer, {
+          transform: [
+            { rotate: rotateAnim.interpolate({
+              inputRange: [0, 360],
+              outputRange: ['0deg', '360deg']
+            })}
+          ]
+        }]}>
+          <Svg height="100" width="100">
+            <Path
+              d="M50 5 L100 100 L50 70 L0 100 Z"
+              fill={getArrowColor()}
+            />
+          </Svg>
+        </Animated.View>
+
+        {/* Distance Information */}
+        <View style={styles.distanceContainer}>
+          <Text style={styles.distanceText}>
+            {distance > 0 ? `${distance}m to ` : 'Searching... '}
+            {destination?.name}
+          </Text>
+          <Text style={styles.directionText}>
+            {distance < 20 ? 'You have arrived!' : 'Follow the arrow'}
+          </Text>
         </View>
-      </Camera>
 
-      {/* Back Button */}
-      <TouchableOpacity style={styles.backButton} onPress={onBack}>
-        <Ionicons name="arrow-back" size={24} color="white" />
-        <Text style={styles.backButtonText}>Back to Map</Text>
-      </TouchableOpacity>
-
-      {/* Mini Map */}
-      <MapView
-        style={styles.map}
-        initialRegion={{
-          latitude: location ? location.latitude : 13.611652749054086,
-          longitude: location ? location.longitude : 100.83792247449529,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        }}
-      >
-        {location && <Marker coordinate={location} />}
-        <Marker coordinate={destination} />
-      </MapView>
+        {/* Path Visualization */}
+        <Svg style={styles.pathVisualization}>
+          <Path
+            d={`M${CENTER_X} ${SCREEN_HEIGHT} L${CENTER_X} ${CENTER_Y}`}
+            stroke="white"
+            strokeWidth="2"
+            strokeDasharray="5,5"
+          />
+        </Svg>
+      </CameraView>
     </View>
   );
 };
@@ -96,46 +178,55 @@ const ARNavigation = ({ destination, onBack }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'center',
   },
   camera: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  arrowContainer: {
-    position: 'absolute',
-    bottom: 50,
-  },
-  arrow: {
-    fontSize: 40,
-    color: 'white',
   },
   backButton: {
     position: 'absolute',
-    bottom: 20, // Positioned at the bottom of the screen
+    top: 40,
     left: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007AFF', // Solid blue background
-    borderRadius: 25, // Rounded corners
-    paddingVertical: 10,
-    paddingHorizontal: 15,
     zIndex: 1,
-    elevation: 3, // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
   },
-  backButtonText: {
-    marginLeft: 10,
-    fontSize: 16,
+  compass: {
+    position: 'absolute',
+    top: CENTER_Y - 150,
+    left: CENTER_X - 150,
+    opacity: 0.5,
+  },
+  arrowContainer: {
+    position: 'absolute',
+    top: CENTER_Y - 50,
+    left: CENTER_X - 50,
+  },
+  distanceContainer: {
+    position: 'absolute',
+    bottom: 40,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  distanceText: {
     color: 'white',
+    fontSize: 18,
     fontWeight: 'bold',
   },
-  map: {
-    width,
-    height: height * 0.3,
+  directionText: {
+    color: 'white',
+    fontSize: 14,
+    marginTop: 5,
+  },
+  pathVisualization: {
+    position: 'absolute',
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+  },
+  message: {
+    textAlign: 'center',
+    paddingBottom: 10,
   },
 });
 
