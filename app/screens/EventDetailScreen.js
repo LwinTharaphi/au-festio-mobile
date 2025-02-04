@@ -499,7 +499,14 @@ export default function EventDetailScreen({ route }) {
       <ScrollView>
         <View style={styles.container}>
           {/* Section 1: Event Title */}
-          <Text style={styles.title}>You have registered for {event.eventName}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'left', padding: 5 }}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 5 }}>
+              <Icon name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
+              You have registered for {event.eventName}
+            </Text>
+          </View>
           <View style={styles.line} />
           <Image
             source={{ uri: `${event.poster}` }}
@@ -560,10 +567,10 @@ export default function EventDetailScreen({ route }) {
               <View style={styles.modalOverlay}>
                 {qrType === 'checkin' ? (
                   <QRCode value={qrData} size={300} />
-                ): (
+                ) : (
                   // <QRCode value={paymentQR} size={300} />
                   // <SvgXml xml={paymentQR} width="100%" height="100%" />
-                  <Image source={{ uri: paymentQR }} style={{width: 200, height: 200}} />
+                  <Image source={{ uri: paymentQR }} style={{ width: 200, height: 200 }} />
                 )}
               </View>
             </TouchableWithoutFeedback>
@@ -600,6 +607,9 @@ export default function EventDetailScreen({ route }) {
   return (
     <ScrollView>
       <View style={styles.container}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginBottom: 5 }}>
+          <Icon name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
         {/* Event Poster */}
         <Image
           source={{ uri: `${event.poster}` }}
@@ -754,7 +764,7 @@ export default function EventDetailScreen({ route }) {
                         style={{ justifyContent: 'center', alignItems: 'center' }}
                       >
                         {/* <SvgXml xml={paymentQR} width="180" height="180" /> */}
-                        <Image source={{ uri: paymentQR }} style={{width: 180, height: 180}} />
+                        <Image source={{ uri: paymentQR }} style={{ width: 180, height: 180 }} />
                         {/* <QRCode value={paymentQR} size={300} /> */}
                       </TouchableOpacity>
 
@@ -804,7 +814,7 @@ export default function EventDetailScreen({ route }) {
                         <TouchableWithoutFeedback onPress={handleImageClose}>
                           <View style={styles.modalContainer}>
                             {/* <SvgXml xml={paymentQR} width="100%" height="100%" /> */}
-                            <Image source={{ uri: paymentQR }} style={{width: 400, height: 400}} />
+                            <Image source={{ uri: paymentQR }} style={{ width: 400, height: 400 }} />
                             {/* <QRCode value={paymentQR} size={300} /> */}
                           </View>
                         </TouchableWithoutFeedback>
