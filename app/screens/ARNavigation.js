@@ -12,6 +12,7 @@ import { Audio } from 'expo-av';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CENTER_X = SCREEN_WIDTH / 2;
 const CENTER_Y = SCREEN_HEIGHT / 2;
+const ARRIVAL_THRESHOLD = 15; // Meters
 
 const ARNavigation = ({ destination, onBack }) => {
   const [facing, setFacing] = useState('back');
@@ -21,6 +22,7 @@ const ARNavigation = ({ destination, onBack }) => {
   const [distance, setDistance] = useState(0);
   const rotateAnim = useState(new Animated.Value(0))[0];
   const [sound, setSound] = useState(null);
+  const [hasArrived, setHasArrived] = useState(false);
 
   // Load sound effect
   async function loadSound() {
@@ -46,21 +48,24 @@ const ARNavigation = ({ destination, onBack }) => {
       Location.watchPositionAsync(
         { accuracy: Location.Accuracy.BestForNavigation },
         (loc) => {
-          setLocation(loc.coords);
           const newDistance = getDistance(loc.coords, destination);
+          setLocation(loc.coords);
           setDistance(newDistance);
           
-          // Trigger haptic feedback when close
-          if (newDistance < 20) {
+          if (newDistance <= ARRIVAL_THRESHOLD && !hasArrived) {
+            setHasArrived(true);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             if (sound) {
               sound.replayAsync();
             }
+          } else if (newDistance > ARRIVAL_THRESHOLD && hasArrived) {
+            setHasArrived(false);
           }
         }
       );
 
       Sensors.Magnetometer.addListener((data) => {
+        // Adjust for device orientation (landscape vs portrait)
         const { x, y } = data;
         let newHeading = Math.atan2(y, x) * (180 / Math.PI);
         newHeading = (newHeading + 360) % 360;
@@ -87,10 +92,12 @@ const ARNavigation = ({ destination, onBack }) => {
         destination
       );
       
+      // Calculate relative angle with proper offset
       const relativeAngle = (bearing - heading + 360) % 360;
       
+      // Adjust arrow rotation with device orientation compensation
       Animated.spring(rotateAnim, {
-        toValue: relativeAngle,
+        toValue: -relativeAngle, // Negative value for correct rotation direction
         useNativeDriver: true,
         friction: 5,
       }).start();
@@ -98,9 +105,9 @@ const ARNavigation = ({ destination, onBack }) => {
   }, [location, heading, destination]);
 
   const getArrowColor = () => {
-    if (distance < 20) return '#00FF00'; // Green when close
-    if (distance < 50) return '#FFA500'; // Orange when medium
-    return '#FF0000'; // Red when far
+    if (hasArrived) return '#00FF00';
+    if (distance < 50) return '#FFA500';
+    return '#FF0000';
   };
 
   if (!permission) return <View />;
@@ -146,6 +153,7 @@ const ARNavigation = ({ destination, onBack }) => {
             <Path
               d="M50 5 L100 100 L50 70 L0 100 Z"
               fill={getArrowColor()}
+              transform={`rotate(180 50 50)`} // Correct arrow direction
             />
           </Svg>
         </Animated.View>
@@ -153,27 +161,32 @@ const ARNavigation = ({ destination, onBack }) => {
         {/* Distance Information */}
         <View style={styles.distanceContainer}>
           <Text style={styles.distanceText}>
-            {distance > 0 ? `${distance}m to ` : 'Searching... '}
+            {hasArrived ? `Arrived at ` : `${Math.round(distance)}m to `}
             {destination?.name}
           </Text>
-          <Text style={styles.directionText}>
-            {distance < 20 ? 'You have arrived!' : 'Follow the arrow'}
-          </Text>
+          {hasArrived && (
+            <Text style={styles.successText}>
+              🎉 You're here!
+            </Text>
+          )}
         </View>
 
         {/* Path Visualization */}
-        <Svg style={styles.pathVisualization}>
-          <Path
-            d={`M${CENTER_X} ${SCREEN_HEIGHT} L${CENTER_X} ${CENTER_Y}`}
-            stroke="white"
-            strokeWidth="2"
-            strokeDasharray="5,5"
-          />
-        </Svg>
+        {!hasArrived && (
+          <Svg style={styles.pathVisualization}>
+            <Path
+              d={`M${CENTER_X} ${SCREEN_HEIGHT} L${CENTER_X} ${CENTER_Y}`}
+              stroke="white"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+            />
+          </Svg>
+        )}
       </CameraView>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -227,6 +240,17 @@ const styles = StyleSheet.create({
   message: {
     textAlign: 'center',
     paddingBottom: 10,
+  },
+  successText: {
+    color: '#00FF00',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 10,
+  },
+  distanceText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 
