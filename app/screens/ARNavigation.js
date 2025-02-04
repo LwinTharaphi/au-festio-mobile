@@ -27,7 +27,7 @@ const ARNavigation = ({ destination, onBack }) => {
   // Load sound effect
   async function loadSound() {
     const { sound } = await Audio.Sound.createAsync(
-      require('/Users/thaemyatnoehtut/au-festio-mobile/assets/sound/navigation_beep.mp3')
+      require('../../assets/sound/navigation_beep.mp3')
     );
     setSound(sound);
   }
