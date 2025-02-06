@@ -55,6 +55,7 @@ export default function EventDetailScreen({ route }) {
   const [registeredDate, setRegisteredDate] = useState(null);
   const [status, setStatus] = useState(null);
   const [refundStatus, setRefundStatus] = useState(null);
+  const [totalRegistered, setTotalRegistered] = useState(null);
   // const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
   const faculties = [
     { label: 'VMES', value: 'VMES' },
@@ -121,13 +122,19 @@ export default function EventDetailScreen({ route }) {
       }
     };
 
+    const fetchTotalRegistered = async () => {   
+        const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/dashboards`);   
+        const data = await response.json();
+        const totalRegistrations = data.stats.totalRegistrations;
+        setTotalRegistered(totalRegistrations);
+    };
 
     // Fetch all the data
     const fetchData = async () => {
       setLoading(true);
       try {
         // Fetch event details and QR codes in parallel
-        await Promise.all([fetchEventDetails(), fetchQRCodes(), fetchStudentDetails()]);
+        await Promise.all([fetchEventDetails(), fetchQRCodes(), fetchStudentDetails(), fetchTotalRegistered()]);
       } catch (error) {
         console.error("Error during data fetch:", error);
       } finally {
@@ -601,6 +608,7 @@ export default function EventDetailScreen({ route }) {
   const today = new Date();
   const eventDate = new Date(event.createdAt);
   const isRegistrationClosed = new Date() > new Date(event.registerationDate);
+  const isSeatsFull = totalRegistered >= event.seats; // Check if seats are full
 
   // Calculate the time difference in hours
   const timeDifference = (today - eventDate) / (1000 * 60 * 60);
@@ -664,14 +672,18 @@ export default function EventDetailScreen({ route }) {
           ) : (
             <Text style={styles.policyText}>No discount applied for this event.</Text>
           )}
-
+          {isSeatsFull ? (
+            <Text style={styles.policyText}>Seats are full for this event.</Text>
+          ) : null}
         </View>
 
         {/* Register/Cancel Button */}
         <Button
           title={isRegistered ? "Cancel Registration" : "Register"}
           onPress={isRegistered ? handleCancelRegistration : handleRegister}
-          disabled={!isRegistered && isRegistrationClosed} // Disable only for registration after the deadline
+          disabled={
+            (!isRegistered && isRegistrationClosed) || isSeatsFull // Disable if registration is closed or seats are full
+          }
         />
         {/* Registration Modal */}
         <Modal
