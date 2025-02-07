@@ -19,7 +19,7 @@ import { auth } from '../config/firebase'
 
 export default function StaffRolesScreen({ route }) {
   const navigation = useNavigation();
-  const { organizerId, eventId } = route.params;
+  const { organizerId, eventId, expoPushToken } = route.params;
   const [staffRoles, setStaffRoles] = useState([]);
   const [event, setEvent] = useState(null);
   const [staffData, setStaffData] = useState([]);
@@ -188,7 +188,7 @@ export default function StaffRolesScreen({ route }) {
           text: "OK",
           onPress: () => {
             const firebaseUID = user?.uid;
-            const payload = { ...formData, role: formData.role, event, firebaseUID };
+            const payload = { ...formData, role: formData.role, event, firebaseUID, expoPushToken };
             fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

@@ -27,7 +27,7 @@ export default function EventDetailTabs({ route }) {
       <Tab.Screen
         name="Staffs"
         component={StaffsScreen}
-        initialParams={{organizerId, eventId }}
+        initialParams={{organizerId, eventId , expoPushToken}}
         options={{
           tabBarLabel: 'Staffs',
           tabBarIcon: ({ color, size }) => (
