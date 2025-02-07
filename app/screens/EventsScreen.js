@@ -297,7 +297,20 @@ export default function EventsScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: '#F9F7FE',
     flex: 1,
     padding: 10,
   },
+  noEventsContainer: {
+    backgroundColor: '#F9F7FE',
+    flex: 1, // Takes up all available space
+    justifyContent: 'center', // Centers content vertically
+    alignItems: 'center', // Centers content horizontally
+  },
+  noEventsText: {
+    fontSize: 16, // Adjust font size as needed
+    color: '#666', // Adjust text color as needed
+    textAlign: 'center', // Centers text horizontally within the container
+  },
+
 });

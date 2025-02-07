@@ -139,8 +139,7 @@ export default function EventDetailScreen({ route }) {
       try {
         // Fetch event details and QR codes in parallel
         await Promise.all([fetchEventDetails(), fetchQRCodes(), fetchStudentDetails(), fetchTotalRegistered()]);
-      } catch (error) {
-        console.error("Error during data fetch:", error);
+      } catch (error) {      
       } finally {
         setLoading(false);
       }
@@ -189,10 +188,10 @@ export default function EventDetailScreen({ route }) {
     // Save the local file to the media library
     await MediaLibrary.saveToLibraryAsync(fileUri);
 
-    Alert.alert("Image saved to your gallery!");
+    Alert.alert("Success","Image saved to your gallery!");
   } catch (error) {
     console.error("Error saving image:", error);
-    Alert.alert("Failed to save image.");
+    Alert.alert("Sorry","Failed to save image.");
   }
   };
 
@@ -730,7 +729,7 @@ export default function EventDetailScreen({ route }) {
                     {errorMessage}
                   </Text>
                 ) : null}
-                <Text style={styles.modalTitle}>Register for Event</Text>
+                <Text style={styles.modalTitle}>Register for {event.eventName}</Text>
                 <Animated.View
                   style={{
                     transform: [{ translateX: formContainer }], // Apply the shake animation to the form container
@@ -768,11 +767,14 @@ export default function EventDetailScreen({ route }) {
                       style={{
                         inputIOS: {
                           ...styles.picker,
-                          color: '#AAA', // Force black text for selected value
+                          color: formData.faculty ? "#000" : "#AAA",
                         },
-                        inputAndroid: styles.picker,
+                        inputAndroid: {
+                          ...styles.picker,
+                          color: formData.faculty ? "#000" : "#AAA",
+                        },
                         placeholder: {
-                          color: '#AAA',
+                          color: "#AAA", // Same logic for Android
                         },
                         viewContainer: {
                           borderWidth: 1,
