@@ -72,7 +72,7 @@ export default function NotificationScreen() {
 
   const handleNotificationPress = (notification) => {
     const { eventId, type } = notification.data;
-    if (type === 'feedback-reminder') {
+    if (type === 'feedback-reminder' || type === 'registration-confirmation') {
       navigation.navigate('NotificationDetail', { eventId, type, notification });
     }
   }

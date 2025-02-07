@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, TextInput, Button, Alert } from 'react-native';
 import { AirbnbRating } from 'react-native-ratings';
 import { auth } from '../config/firebase'
+import QRCode from 'react-native-qrcode-svg';
 
 export default function NotificationDetailScreen({ route }) {
 
@@ -10,6 +11,7 @@ export default function NotificationDetailScreen({ route }) {
     const [existingReview, setExistingReview] = useState(null);
     const [feedback, setFeedback] = useState('');
     const [rating, setRating] = useState(0);
+    const [qrData, setQrData] = useState(null);
     const user = auth.currentUser;
 
     useEffect(() => {
@@ -74,6 +76,22 @@ export default function NotificationDetailScreen({ route }) {
             }},
         ]);
     };
+    const fetchCheckInQR = async (notification) => {
+        if (!notification.data.studentId || !user.uid) return;
+        try {
+          const response = await fetch(`https://au-festio.vercel.app/api/organizers/${notification.data.organizerId}/events/${notification.data.eventId}/students/getcheckinqr?studentId=${notification.data.studentId}&firebaseUID=${user.uid}`);
+          const data = await response.json();
+          console.log("Check in QR code data:", data);
+          if (data && data.qrCodeData) {
+            setQrData(data.qrCodeData);
+            console.log("Check in QR code data:", data.qrCodeData);
+          } else {
+            console.error("QR code data not found.");
+          }
+        } catch (error) {
+          console.error("Error fetching check-in QR code:", error);
+        }
+      };
 
     return (
         <View className="flex-1 p-5 bg-white">
@@ -100,6 +118,16 @@ export default function NotificationDetailScreen({ route }) {
             {!existingReview && (
             <Button title="Submit Feedback" onPress={handleSubmitFeedback} />
             )}
+            </View>
+        )}
+        {notification.data.type === 'registration-confirmation' && (
+            <View className="mt-5">
+                <Button title="View QR Code" onPress={() => fetchCheckInQR(notification)} />
+                {qrData ? (
+                  <QRCode value={qrData} size={300} />
+                ) : (
+                    <Text className="text-lg text-gray-600 mt-5">No QR code available.</Text>
+                )}
             </View>
         )}
         </View>

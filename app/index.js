@@ -179,19 +179,14 @@ export default function App() {
     };
   
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
-  
-      // Store only event deletion notifications
-      if (notification.request.content.title?.includes("Event Deleted")) {
-        storeNotification({
-          id: notification.request.identifier,
-          title: notification.request.content.title,
-          body: notification.request.content.body,
-          timestamp: new Date().toISOString(),
-          data: notification.request.content.data,
-        });
-      }
-  
+      console.log('Notification received index:', notification);
+      storeNotification({
+        id: notification.request.identifier,
+        title: notification.request.content.title,
+        body: notification.request.content.body,
+        timestamp: new Date().toISOString(),
+        data: notification.request.content.data,
+      });
       setNotification(notification);
     });
   
