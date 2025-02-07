@@ -4,6 +4,8 @@ import { Picker } from '@react-native-picker/picker';
 import RNPickerSelect from 'react-native-picker-select';
 import QRCode from 'react-native-qrcode-svg';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system';
 import {
   View,
   Text,
@@ -26,6 +28,7 @@ import { auth } from '../config/firebase'
 import Svg, { SvgXml } from 'react-native-svg';
 import { uploadFile, deleteImage } from '../services/aws';
 import { AWS_BUCKET_NAME, AWS_REGION } from '@env';
+import { Save } from 'react-native-feather';
 
 export default function EventDetailScreen({ route }) {
   const navigation = useNavigation();
@@ -165,6 +168,32 @@ export default function EventDetailScreen({ route }) {
     fetchCheckInQR();
   }, [studentId, user.uid]);
 
+  const saveImageToGallery = async () => {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+  if (status !== "granted") {
+    Alert.alert("Permission Denied", "You need to grant permission to save images.");
+    return;
+  }
+
+  try {
+    // Extract base64 data (remove `data:image/png;base64,` prefix)
+    const base64Code = paymentQR.replace(/^data:image\/\w+;base64,/, "");
+
+    // Define local file path
+    const fileUri = FileSystem.documentDirectory + "paymentQR.jpg";
+
+    // Write base64 data to a local file
+    await FileSystem.writeAsStringAsync(fileUri, base64Code, { encoding: FileSystem.EncodingType.Base64 });
+
+    // Save the local file to the media library
+    await MediaLibrary.saveToLibraryAsync(fileUri);
+
+    Alert.alert("Image saved to your gallery!");
+  } catch (error) {
+    console.error("Error saving image:", error);
+    Alert.alert("Failed to save image.");
+  }
+  };
 
   const currentDate = new Date().toLocaleDateString();
 
@@ -772,7 +801,7 @@ export default function EventDetailScreen({ route }) {
                   {event.isPaid && (
                     <>
                       <TouchableOpacity
-                        onPress={handleImageClick}
+                        onPress={saveImageToGallery}
                         style={{ justifyContent: 'center', alignItems: 'center' }}
                       >
                         {/* <SvgXml xml={paymentQR} width="180" height="180" /> */}
@@ -807,9 +836,9 @@ export default function EventDetailScreen({ route }) {
                           Upload Payment Screenshot
                         </Text>
                       </TouchableOpacity>
-
+ 
                       {formData.paymentScreenshot && (
-                        <View style={styles.uploadedImageContainer}>
+                        <View style={styles.uploadedImageContainer}>  
                           <Image source={{ uri: formData.paymentScreenshot.uri }} style={styles.uploadedImage} />
                           <TouchableOpacity onPress={removeImage}>
                             <Text style={styles.removeText}>Remove Image</Text>
