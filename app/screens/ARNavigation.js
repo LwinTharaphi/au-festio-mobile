@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, Text, Dimensions, TouchableOpacity, Animated } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
@@ -69,6 +69,7 @@ const ARNavigation = ({ destination, onBack }) => {
   const [nearbyPOIs, setNearbyPOIs] = useState([]);
   const [radarPOIs, setRadarPOIs] = useState([]);
   const [showRadar, setShowRadar] = useState(true);
+  const mockLocationSetRef = useRef(false);
 
   const destinationData = useMemo(() => ({
     exists: !!destination,
@@ -96,14 +97,18 @@ const ARNavigation = ({ destination, onBack }) => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
 
+      // Subscribe to location updates
       locationSub = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.BestForNavigation },
         handleLocationUpdate
       );
 
+      // Subscribe to magnetometer updates
       magnetometerSub = Sensors.Magnetometer.addListener(handleMagnetometer);
 
-      if (__DEV__) {
+      // In development, only set the mock location once
+      if (__DEV__ && destination && !mockLocationSetRef.current) {
+        mockLocationSetRef.current = true;
         Location.setMockLocationAsync(destination);
       }
     })();
@@ -150,35 +155,35 @@ const ARNavigation = ({ destination, onBack }) => {
     setNearbyPOIs(calculatedPOIs);
   };
 
-  useEffect(() => {
-    const newRadarPOIs = nearbyPOIs.map(poi => {
-      const angle = (poi.bearing - heading + 360) % 360;
-      const angleRad = (angle - 90) * (Math.PI / 180);
-      const ratio = poi.distance / RADAR_MAX_DISTANCE;
-      
-      return {
-        ...poi,
-        x: RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.cos(angleRad)),
-        y: RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.sin(angleRad))
-      };
-    });
+    useEffect(() => {
+      const newRadarPOIs = nearbyPOIs.map(poi => {
+        const angle = (poi.bearing - heading + 360) % 360;
+        const angleRad = (angle - 90) * (Math.PI / 180);
+        const ratio = poi.distance / RADAR_MAX_DISTANCE;
+        
+        return {
+          ...poi,
+          x: RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.cos(angleRad)),
+          y: RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.sin(angleRad))
+        };
+      });
+    
+      setRadarPOIs(newRadarPOIs);
+    }, [nearbyPOIs, heading]); // Add dependencies here
 
-    setRadarPOIs(newRadarPOIs);
-  }, [nearbyPOIs, heading]);
-
-  useEffect(() => {
-    if (location && heading !== null && destination) {
-      const bearing = getGreatCircleBearing(location, destination);
-      const relativeAngle = (bearing - heading + 360) % 360;
-      
-      Animated.spring(rotateAnim, {
-        toValue: -relativeAngle,
-        useNativeDriver: true,
-        friction: 6,
-        tension: 50
-      }).start();
-    }
-  }, [location, heading, destination]);
+    useEffect(() => {
+      if (location && heading !== null && destination) {
+        const bearing = getGreatCircleBearing(location, destination);
+        const relativeAngle = (bearing - heading + 360) % 360;
+        
+        Animated.spring(rotateAnim, {
+          toValue: -relativeAngle,
+          useNativeDriver: true,
+          friction: 6,
+          tension: 50
+        }).start();
+      }
+    }, [location, heading, destination, rotateAnim]); // Add dependencies here
 
   const renderRadar = () => (
     <Svg height={RADAR_SIZE} width={RADAR_SIZE} style={styles.radar}>
@@ -312,7 +317,7 @@ const ARNavigation = ({ destination, onBack }) => {
             initialRegion={{
               latitude: location ? location.latitude : destination.latitude,
               longitude: location ? location.longitude : destination.longitude,
-              latitudeDelta: 0.002, // More zoomed in
+              latitudeDelta: 0.002,
               longitudeDelta: 0.002,
             }}
             zoomEnabled={false}
@@ -383,6 +388,26 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 1,
   },
+  radarContainer: {
+    // Position the radar below the back arrow button
+    position: 'absolute',
+    top: 80, // Adjust this value as needed so it's beneath the back arrow
+    left: 0, // Align with the back arrow (or adjust as desired)
+    width: RADAR_SIZE,
+    height: RADAR_SIZE + 20, // extra space for label text
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 5,
+    zIndex: 1,
+  },
+  radarText: {
+    color: 'white',
+    fontSize: 15,
+    marginTop: 5,
+    textAlign: 'center',
+  },
   compass: {
     position: 'absolute',
     top: CENTER_Y - 150,
@@ -428,28 +453,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 10,
   },
-  distanceText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   mapContainer: {
     position: 'absolute',
     bottom: 500,
-    right: 8,
-    width: 210,
-    height: 170,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  mapContainer: {
-    position: 'absolute',
-    bottom: 500,
-    right: 5,
-    width: 200,
+    right: 0,
+    width: 198,
     height: 180,
     borderRadius: 15,
     overflow: 'hidden',
