@@ -5,12 +5,12 @@ import NotificationDetailScreen from '../screens/NotificationDetailScreen';
 
 const Stack = createStackNavigator();
 
-export default function ProfileStackNavigator({ route }) {
-  const { notification } = route.params;
+export default function NotificationStack({ route }) {
+  const { notification , expoPushToken} = route.params;
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Notification" component={NotificationScreen} initialParams={{notification}} />
+      <Stack.Screen name="Notification" component={NotificationScreen} initialParams={{notification, expoPushToken}} />
       <Stack.Screen name="NotificationDetail" component={NotificationDetailScreen} />
     </Stack.Navigator>
   );

@@ -12,6 +12,7 @@ import { setUser, logoutUser } from '../redux/slice/user'
 import MainTabNavigator from './BottomTabNavigator'
 import EventDetailScreen from '../screens/EventDetailScreen';
 import RefundScreen from '../screens/RefundScreen';
+import NotificationStack from './NotificationStack';
 
 const Stack = createStackNavigator();
 
@@ -49,6 +50,7 @@ export default function AppNavigator({user, expoPushToken, notification }) {
         <Stack.Screen options={{presentation: 'modal'}} name="EventDetail" component={EventDetailScreen} />
         <Stack.Screen options={{ presentation: 'modal' }} name="RegistrationSuccess" component={RegistrationSuccessScreen}/>
         <Stack.Screen options={{ presentation: 'modal' }} name="Refund" component={RefundScreen}/>
+        <Stack.Screen name="NotificationStack" component={NotificationStack} initialParams={{notification, expoPushToken}} options={{headerShown: false, tabBarStyle: {display: 'none'}}} />
       </Stack.Navigator>
     )
   } else {

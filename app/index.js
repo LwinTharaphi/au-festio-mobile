@@ -80,6 +80,7 @@ export async function registerForPushNotificationsAsync() {
 }
 
 export default function App() {
+  const navigation = useNavigation();
   const [isReady, setIsReady] = React.useState(false);
   const [user, setUser] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
@@ -187,6 +188,7 @@ export default function App() {
           title: notification.request.content.title,
           body: notification.request.content.body,
           timestamp: new Date().toISOString(),
+          data: notification.request.content.data,
         });
       }
   
@@ -195,6 +197,8 @@ export default function App() {
   
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
       console.log("Notification response received: ", response);
+      const { eventId, type } = response.notification.request.content.data;
+      navigation.navigate('NotificationStack', { screen: 'Notification', params: { eventId, type } });
     });
   
     return () => {

@@ -14,7 +14,7 @@ export default function EventStackNavigator({route,navigation}) {
   return (
     <Stack.Navigator>
       <Stack.Screen name="EventLists" component={EventsScreen} initialParams={{expoPushToken}} options={{headerShown: false, tabBarStyle: {display: 'none'}}} />
-      <Stack.Screen name="NotificationStack" component={NotificationStack} initialParams={{notification}} options={{headerShown: false, tabBarStyle: {display: 'none'}}} />
+      {/* <Stack.Screen name="NotificationStack" component={NotificationStack} initialParams={{notification, expoPushToken}} options={{headerShown: false, tabBarStyle: {display: 'none'}}} /> */}
       <Stack.Screen
         name="EventDetail"
         component={EventDetailTabs}

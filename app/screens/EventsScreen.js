@@ -221,7 +221,7 @@ export default function EventsScreen({ navigation, route }) {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const { eventId, type } = response.notification.request.content.data;
       console.log('Notification response received:', response, eventId, type);
-      navigation.navigate('Notification', { eventId, type });
+      navigation.navigate('NotificationStack', { screen: 'Notification', params: { eventId, type } });
     });
     return () => {
       notificationSubscription.remove();
