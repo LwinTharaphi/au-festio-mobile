@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Image, Dimensions, TouchableOpacity, Animated } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import React, { useState, useEffect, useMemo } from 'react';
+import { StyleSheet, View, Text, Dimensions, TouchableOpacity, Animated } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import * as Sensors from 'expo-sensors';
 import { getGreatCircleBearing, getDistance } from 'geolib';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 import MapView, { Marker } from 'react-native-maps';
@@ -13,7 +13,11 @@ import MapView, { Marker } from 'react-native-maps';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CENTER_X = SCREEN_WIDTH / 2;
 const CENTER_Y = SCREEN_HEIGHT / 2;
-const ARRIVAL_THRESHOLD = 15; // Meters
+const ARRIVAL_THRESHOLD = 15;
+const RADAR_SIZE = 180;
+const RADAR_RADIUS = RADAR_SIZE / 2;
+const RADAR_MAX_DISTANCE = 200;
+const POI_LIMIT = 5;
 
 const markers = [
   { id: 1, name: 'CL Building', latitude: 13.611652749054086, longitude: 100.83792247449529 },
@@ -49,8 +53,9 @@ const markers = [
   { id: 31, name: 'John Paul II Sports Center', latitude: 13.615554446216818, longitude: 100.83355005376762 },
   { id: 32, name: 'Indoor Tennis Court', latitude: 13.616033063962563, longitude: 100.83394642218752 },
   { id: 33, name: 'Outdoor Parking Lot', latitude: 13.615317913000434, longitude: 100.83485431364852 },
-  { id: 34, name: 'Graduate Studies', latitude: 13.612840208801865, longitude: 100.83623324263411 },
+  {id: 34, name: 'Graduate Studies', latitude: 13.612840208801865, longitude: 100.83623324263411},
 ];
+
 
 const ARNavigation = ({ destination, onBack }) => {
   const [facing, setFacing] = useState('back');
@@ -61,100 +66,186 @@ const ARNavigation = ({ destination, onBack }) => {
   const rotateAnim = useState(new Animated.Value(0))[0];
   const [sound, setSound] = useState(null);
   const [hasArrived, setHasArrived] = useState(false);
+  const [nearbyPOIs, setNearbyPOIs] = useState([]);
+  const [radarPOIs, setRadarPOIs] = useState([]);
+  const [showRadar, setShowRadar] = useState(true);
 
-  // Load sound effect
-  async function loadSound() {
+  const destinationData = useMemo(() => ({
+    exists: !!destination,
+    distance: location ? getDistance(location, destination) : 0,
+    bearing: location ? getGreatCircleBearing(location, destination) : 0
+  }), [location, destination]);
+
+  const loadSound = async () => {
     const { sound } = await Audio.Sound.createAsync(
       require('../../assets/sound/navigation_beep.mp3')
     );
     setSound(sound);
-  }
+  };
 
   useEffect(() => {
     loadSound();
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
+    return () => sound?.unloadAsync();
   }, []);
 
   useEffect(() => {
+    let locationSub;
+    let magnetometerSub;
+
     (async () => {
-      const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
-      
-      Location.watchPositionAsync(
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+
+      locationSub = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.BestForNavigation },
-        (loc) => {
-          const newDistance = getDistance(loc.coords, destination);
-          setLocation(loc.coords);
-          setDistance(newDistance);
-          
-          if (newDistance <= ARRIVAL_THRESHOLD && !hasArrived) {
-            setHasArrived(true);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            if (sound) {
-              sound.replayAsync();
-            }
-          } else if (newDistance > ARRIVAL_THRESHOLD && hasArrived) {
-            setHasArrived(false);
-          }
-        }
+        handleLocationUpdate
       );
 
-      Sensors.Magnetometer.addListener((data) => {
-        // Adjust for device orientation (landscape vs portrait)
-        const { x, y } = data;
-        let newHeading = Math.atan2(y, x) * (180 / Math.PI);
-        newHeading = (newHeading + 360) % 360;
-        setHeading(newHeading);
-      });
+      magnetometerSub = Sensors.Magnetometer.addListener(handleMagnetometer);
 
       if (__DEV__) {
-        Location.setMockLocationAsync({
-          latitude: destination.latitude,
-          longitude: destination.longitude,
-        });
+        Location.setMockLocationAsync(destination);
       }
     })();
 
     return () => {
-      Sensors.Magnetometer.removeAllListeners();
+      locationSub?.remove();
+      magnetometerSub?.remove();
     };
   }, [destination]);
 
+  const handleLocationUpdate = (loc) => {
+    const newDistance = getDistance(loc.coords, destination);
+    setLocation(loc.coords);
+    setDistance(newDistance);
+
+    if (newDistance <= ARRIVAL_THRESHOLD && !hasArrived) {
+      setHasArrived(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      sound?.replayAsync();
+    } else if (newDistance > ARRIVAL_THRESHOLD && hasArrived) {
+      setHasArrived(false);
+    }
+
+    updateNearbyPOIs(loc.coords);
+  };
+
+  const handleMagnetometer = ({ x, y }) => {
+    const newHeading = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+    setHeading(newHeading);
+  };
+
+  const updateNearbyPOIs = (currentLocation) => {
+    const calculatedPOIs = markers
+      .filter(m => m.id !== destination?.id)
+      .map(m => ({
+        ...m,
+        distance: getDistance(currentLocation, m),
+        bearing: getGreatCircleBearing(currentLocation, m)
+      }))
+      .filter(poi => poi.distance <= RADAR_MAX_DISTANCE)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, POI_LIMIT);
+
+    setNearbyPOIs(calculatedPOIs);
+  };
+
+  useEffect(() => {
+    const newRadarPOIs = nearbyPOIs.map(poi => {
+      const angle = (poi.bearing - heading + 360) % 360;
+      const angleRad = (angle - 90) * (Math.PI / 180);
+      const ratio = poi.distance / RADAR_MAX_DISTANCE;
+      
+      return {
+        ...poi,
+        x: RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.cos(angleRad)),
+        y: RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.sin(angleRad))
+      };
+    });
+
+    setRadarPOIs(newRadarPOIs);
+  }, [nearbyPOIs, heading]);
+
   useEffect(() => {
     if (location && heading !== null && destination) {
-      const bearing = getGreatCircleBearing(
-        { latitude: location.latitude, longitude: location.longitude },
-        destination
-      );
-      
-      // Calculate relative angle with proper offset
+      const bearing = getGreatCircleBearing(location, destination);
       const relativeAngle = (bearing - heading + 360) % 360;
       
-      // Adjust arrow rotation with device orientation compensation
       Animated.spring(rotateAnim, {
-        toValue: -relativeAngle, // Negative value for correct rotation direction
+        toValue: -relativeAngle,
         useNativeDriver: true,
-        friction: 5,
+        friction: 6,
+        tension: 50
       }).start();
     }
   }, [location, heading, destination]);
 
-  const getArrowColor = () => {
-    if (hasArrived) return '#00FF00';
-    if (distance < 50) return '#FFA500';
-    return '#FF0000';
-  };
+  const renderRadar = () => (
+    <Svg height={RADAR_SIZE} width={RADAR_SIZE} style={styles.radar}>
+      <Circle cx={RADAR_RADIUS} cy={RADAR_RADIUS} r={RADAR_RADIUS} fill="rgba(0,0,0,0.3)" />
+      
+      <G stroke="rgba(255,255,255,0.2)" strokeWidth="1">
+        {[0.25, 0.5, 0.75].map(r => (
+          <Circle key={r} cx={RADAR_RADIUS} cy={RADAR_RADIUS} r={RADAR_RADIUS * r} fill="none" />
+        ))}
+      </G>
 
-  if (!permission) return <View />;
+      {radarPOIs.map(poi => (
+        <G key={poi.id} x={poi.x} y={poi.y}>
+          <Circle r="4" fill="#FF6B6B" stroke="#FFF" strokeWidth="1" />
+          <SvgText
+            x="0"
+            y="-8"
+            fill="white"
+            fontSize="10"
+            textAnchor="middle"
+            fontWeight="bold"
+            stroke="rgba(0,0,0,0.5)"
+            strokeWidth="1"
+          >
+            {poi.name.split(' ')[0]}
+          </SvgText>
+        </G>
+      ))}
+
+      <Circle cx={RADAR_RADIUS} cy={RADAR_RADIUS} r="5" fill="#4D96FF" />
+
+      {destinationData.exists && destinationData.distance <= RADAR_MAX_DISTANCE && (
+        (() => {
+          const angle = (destinationData.bearing - heading + 360) % 360;
+          const angleRad = (angle - 90) * (Math.PI / 180);
+          const ratio = destinationData.distance / RADAR_MAX_DISTANCE;
+          
+          return (
+            <G x={RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.cos(angleRad))} 
+               y={RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.sin(angleRad))}>
+              <Circle r="6" fill="#00FF00" stroke="#FFF" strokeWidth="1.5" />
+              <SvgText
+                x="0"
+                y="-10"
+                fill="#00FF00"
+                fontSize="10"
+                textAnchor="middle"
+                fontWeight="bold"
+              >
+                {destination.name.split(' ')[0]}
+              </SvgText>
+            </G>
+          );
+        })()
+      )}
+    </Svg>
+  );
+
+  if (!permission) return null;
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.message}>We need your permission to show the camera</Text>
-        <Button onPress={requestPermission} title="Grant Permission" />
+      <View style={styles.permissionContainer}>
+        <Text style={styles.permissionText}>Camera permission required for AR navigation</Text>
+        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+          <Text style={styles.permissionButtonText}>Enable Camera</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -163,93 +254,114 @@ const ARNavigation = ({ destination, onBack }) => {
     <View style={styles.container}>
       <CameraView style={styles.camera} facing={facing}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Ionicons name="arrow-back" size={28} color="white" />
         </TouchableOpacity>
 
-        {/* Compass Ring */}
-        <Svg height="300" width="300" style={styles.compass}>
-          <Circle
-            cx="150"
-            cy="150"
-            r="140"
-            stroke="white"
-            strokeWidth="2"
-            fill="transparent"
-          />
-        </Svg>
-
-        {/* Navigation Arrow */}
         <Animated.View style={[styles.arrowContainer, {
-          transform: [
-            { rotate: rotateAnim.interpolate({
-              inputRange: [0, 360],
-              outputRange: ['0deg', '360deg']
-            })}
-          ]
+          transform: [{ rotate: rotateAnim.interpolate({
+            inputRange: [0, 360],
+            outputRange: ['0deg', '360deg']
+          })}]
         }]}>
-          <Svg height="100" width="100">
+          <Svg height="120" width="120">
             <Path
-              d="M50 5 L100 100 L50 70 L0 100 Z"
-              fill={getArrowColor()}
-              transform={`rotate(180 50 50)`} // Correct arrow direction
+              d="M60 10 L110 110 L60 80 L10 110 Z"
+              fill={hasArrived ? '#00FF00' : distance < 50 ? '#FFA500' : '#FF5555'}
+              opacity={0.9}
+              stroke="white"
+              strokeWidth="2"
             />
           </Svg>
         </Animated.View>
 
-        {/* Distance Information */}
         <View style={styles.distanceContainer}>
           <Text style={styles.distanceText}>
-            {hasArrived ? `Arrived at ` : `${Math.round(distance)}m to `}
-            {destination?.name}
+            {hasArrived ? `🎉 Arrived at ${destination.name}` : `${Math.round(distance)}m to ${destination.name}`}
           </Text>
-          {hasArrived && (
-            <Text style={styles.successText}>
-              🎉 You're here!
-            </Text>
-          )}
         </View>
 
-        {/* Path Visualization */}
+        <TouchableOpacity 
+          style={styles.radarToggle} 
+          onPress={() => setShowRadar(!showRadar)}
+        >
+          <Ionicons name={showRadar ? "eye-off" : "eye"} size={24} color="white" />
+        </TouchableOpacity>
+
+        {showRadar && (
+          <View style={styles.radarContainer}>
+            {renderRadar()}
+            <Text style={styles.radarText}>Nearby Points of Interest</Text>
+          </View>
+        )}
+
         {!hasArrived && (
-          <Svg style={styles.pathVisualization}>
+          <Svg style={StyleSheet.absoluteFill}>
             <Path
               d={`M${CENTER_X} ${SCREEN_HEIGHT} L${CENTER_X} ${CENTER_Y}`}
-              stroke="white"
+              stroke="rgba(255,255,255,0.5)"
               strokeWidth="2"
-              strokeDasharray="5,5"
+              strokeDasharray="8 5"
             />
           </Svg>
         )}
 
-        {/* Mini Radar Map */}
+        {/* Inside the ARNavigation component's return statement*/} 
         <View style={styles.mapContainer}>
           <MapView
             style={styles.map}
             initialRegion={{
               latitude: location ? location.latitude : destination.latitude,
               longitude: location ? location.longitude : destination.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
+              latitudeDelta: 0.002, // More zoomed in
+              longitudeDelta: 0.002,
             }}
             zoomEnabled={false}
             scrollEnabled={false}
             rotateEnabled={false}
             pitchEnabled={false}
+            loadingEnabled={true}
+            loadingIndicatorColor="#666666"
+            loadingBackgroundColor="#eeeeee"
           >
-            {markers.map((marker) => (
-              <Marker
-                key={marker.id}
-                coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
-                title={marker.name}
-              />
-            ))}
+            {/* User Location Marker */}
             {location && (
               <Marker
                 coordinate={{ latitude: location.latitude, longitude: location.longitude }}
                 title="Your Location"
                 pinColor="blue"
-              />
+              >
+                <View style={styles.userMarker}>
+                  <View style={styles.userMarkerInner} />
+                </View>
+              </Marker>
             )}
+
+            {/* Destination Marker */}
+            {destination && (
+              <Marker
+                coordinate={{ latitude: destination.latitude, longitude: destination.longitude }}
+                title={destination.name}
+                pinColor="green"
+              >
+                <View style={styles.destinationMarker}>
+                  <Ionicons name="flag" size={20} color="white" />
+                </View>
+              </Marker>
+            )}
+
+            {/* Nearby POIs */}
+            {nearbyPOIs.map(poi => (
+              <Marker
+                key={poi.id}
+                coordinate={{ latitude: poi.latitude, longitude: poi.longitude }}
+                title={poi.name}
+                description={`${Math.round(poi.distance)}m away`}
+              >
+                <View style={styles.poiMarker}>
+                  <Text style={styles.poiText}>{poi.name.split(' ')[0]}</Text>
+                </View>
+              </Marker>
+            ))}
           </MapView>
         </View>
       </CameraView>
@@ -332,6 +444,64 @@ const styles = StyleSheet.create({
   },
   map: {
     ...StyleSheet.absoluteFillObject,
+  },
+  mapContainer: {
+    position: 'absolute',
+    bottom: 500,
+    right: 5,
+    width: 200,
+    height: 180,
+    borderRadius: 15,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  userMarker: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#2196F3',
+    borderWidth: 2,
+    borderColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userMarkerInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'white',
+  },
+  destinationMarker: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  poiMarker: {
+    backgroundColor: '#FF6B6B',
+    padding: 5,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'white',
+  },
+  poiText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });
 
