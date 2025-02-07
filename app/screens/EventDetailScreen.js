@@ -32,6 +32,7 @@ import { Save } from 'react-native-feather';
 
 export default function EventDetailScreen({ route }) {
   const navigation = useNavigation();
+  const { expoPushToken } = route.params;
   const { eventId } = route.params;
   const { organizerId } = route.params;
   const { isRegistered: initialIsRegistered } = route.params;
@@ -347,7 +348,7 @@ export default function EventDetailScreen({ route }) {
           text: "OK",
           onPress: async () => { // Make this function async
             const firebaseUID = user?.uid;
-            const payload = { ...formData, eventId, firebaseUID };
+            const payload = { ...formData, eventId, firebaseUID, expoPushToken};
             // console.log('Registration data:', payload );
             console.log('Registration Payload:', payload);
 

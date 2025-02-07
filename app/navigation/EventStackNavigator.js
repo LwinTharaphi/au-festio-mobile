@@ -18,6 +18,7 @@ export default function EventStackNavigator({route,navigation}) {
       <Stack.Screen
         name="EventDetail"
         component={EventDetailTabs}
+        initialParams={{expoPushToken}}
         options={({navigation})=>({
           headerShown: false,
           tabBarStyle: { display: 'none' },
