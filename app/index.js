@@ -12,6 +12,7 @@ import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -160,6 +161,53 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const storeNotification = async (notification) => {
+      try {
+        const storedNotifications = await AsyncStorage.getItem('notifications');
+        const notifications = storedNotifications ? JSON.parse(storedNotifications) : [];
+  
+        // Add the new notification to the beginning of the array
+        notifications.unshift(notification);
+  
+        await AsyncStorage.setItem('notifications', JSON.stringify(notifications));
+      } catch (error) {
+        console.error('Error storing notification:', error);
+      }
+    };
+  
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      console.log('Notification received:', notification);
+  
+      // Store only event deletion notifications
+      if (notification.request.content.title?.includes("Event Deleted")) {
+        storeNotification({
+          id: notification.request.identifier,
+          title: notification.request.content.title,
+          body: notification.request.content.body,
+          timestamp: new Date().toISOString(),
+        });
+      }
+  
+      setNotification(notification);
+    });
+  
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log("Notification response received: ", response);
+    });
+  
+    return () => {
+      if (notificationListener.current) {
+        Notifications.removeNotificationSubscription(notificationListener.current);
+      }
+  
+      if (responseListener.current) {
+        Notifications.removeNotificationSubscription(responseListener.current);
+      }
+    };
+  }, []);
+  
 
   if (!isReady || loading) {
     return (
