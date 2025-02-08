@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -218,9 +219,12 @@ export default function App() {
   }
 
   return (
+    <>
     <SafeAreaProvider>
       <AppNavigator user={user} expoPushToken={expoPushToken} notification={notification} />
     </SafeAreaProvider>
+    <Toast/>
+    </>
   );
 }
 

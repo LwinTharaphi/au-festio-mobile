@@ -6,6 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
+import CustomToast from '../components/CustomToast'; 
 import {
   View,
   Text,
@@ -29,6 +30,7 @@ import Svg, { SvgXml } from 'react-native-svg';
 import { uploadFile, deleteImage } from '../services/aws';
 import { AWS_BUCKET_NAME, AWS_REGION } from '@env';
 import { Save } from 'react-native-feather';
+import Toast from 'react-native-toast-message';
 
 export default function EventDetailScreen({ route }) {
   const navigation = useNavigation();
@@ -60,6 +62,9 @@ export default function EventDetailScreen({ route }) {
   const [status, setStatus] = useState(null);
   const [refundStatus, setRefundStatus] = useState(null);
   const [totalRegistered, setTotalRegistered] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
   // const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
   const faculties = [
     { label: 'VMES', value: 'VMES' },
@@ -126,11 +131,11 @@ export default function EventDetailScreen({ route }) {
       }
     };
 
-    const fetchTotalRegistered = async () => {   
-        const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/dashboards`);   
-        const data = await response.json();
-        const totalRegistrations = data.stats.totalRegistrations;
-        setTotalRegistered(totalRegistrations);
+    const fetchTotalRegistered = async () => {
+      const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/dashboards`);
+      const data = await response.json();
+      const totalRegistrations = data.stats.totalRegistrations;
+      setTotalRegistered(totalRegistrations);
     };
 
     // Fetch all the data
@@ -139,7 +144,7 @@ export default function EventDetailScreen({ route }) {
       try {
         // Fetch event details and QR codes in parallel
         await Promise.all([fetchEventDetails(), fetchQRCodes(), fetchStudentDetails(), fetchTotalRegistered()]);
-      } catch (error) {      
+      } catch (error) {
       } finally {
         setLoading(false);
       }
@@ -170,29 +175,36 @@ export default function EventDetailScreen({ route }) {
 
   const saveImageToGallery = async () => {
     const { status } = await MediaLibrary.requestPermissionsAsync();
-  if (status !== "granted") {
-    Alert.alert("Permission Denied", "You need to grant permission to save images.");
-    return;
-  }
 
-  try {
-    // Extract base64 data (remove `data:image/png;base64,` prefix)
-    const base64Code = paymentQR.replace(/^data:image\/\w+;base64,/, "");
+    if (status !== "granted") {
+      Alert.alert("Permission Denied", "You need to grant permission to save images.");
+      return;
+    }
 
-    // Define local file path
-    const fileUri = FileSystem.documentDirectory + "paymentQR.jpg";
+    try {
+      // Replace base64 data if it's a base64 image
+      const base64Code = paymentQR.replace(/^data:image\/\w+;base64,/, "");
 
-    // Write base64 data to a local file
-    await FileSystem.writeAsStringAsync(fileUri, base64Code, { encoding: FileSystem.EncodingType.Base64 });
+      const fileUri = FileSystem.documentDirectory + "paymentQR.jpg";
 
-    // Save the local file to the media library
-    await MediaLibrary.saveToLibraryAsync(fileUri);
+      await FileSystem.writeAsStringAsync(fileUri, base64Code, { encoding: FileSystem.EncodingType.Base64 });
+      await MediaLibrary.saveToLibraryAsync(fileUri);
 
-    Alert.alert("Success","Image saved to your gallery!");
-  } catch (error) {
-    console.error("Error saving image:", error);
-    Alert.alert("Sorry","Failed to save image.");
-  }
+      // Show success toast
+      showToast('Image saved to your gallery!', 'success');
+    } catch (error) {
+      console.error("Error saving image:", error);
+
+      // Show error toast
+      showToast('Failed to save image.', 'error');
+    }
+  };
+
+  const showToast = (message, type) => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 2000); // Hide after 2 seconds
   };
 
   const currentDate = new Date().toLocaleDateString();
@@ -347,7 +359,7 @@ export default function EventDetailScreen({ route }) {
           text: "OK",
           onPress: async () => { // Make this function async
             const firebaseUID = user?.uid;
-            const payload = { ...formData, eventId, firebaseUID, expoPushToken};
+            const payload = { ...formData, eventId, firebaseUID, expoPushToken };
             // console.log('Registration data:', payload );
             console.log('Registration Payload:', payload);
 
@@ -810,6 +822,11 @@ export default function EventDetailScreen({ route }) {
                         {/* <SvgXml xml={paymentQR} width="180" height="180" /> */}
                         <Image source={{ uri: paymentQR }} style={{ width: 180, height: 180 }} />
                         {/* <QRCode value={paymentQR} size={300} /> */}
+                        <CustomToast
+                          message={toastMessage}
+                          type={toastType}
+                          visible={toastVisible}
+                        />
                       </TouchableOpacity>
 
                       {/* Image Upload Button */}
@@ -839,9 +856,9 @@ export default function EventDetailScreen({ route }) {
                           Upload Payment Screenshot
                         </Text>
                       </TouchableOpacity>
- 
+
                       {formData.paymentScreenshot && (
-                        <View style={styles.uploadedImageContainer}>  
+                        <View style={styles.uploadedImageContainer}>
                           <Image source={{ uri: formData.paymentScreenshot.uri }} style={styles.uploadedImage} />
                           <TouchableOpacity onPress={removeImage}>
                             <Text style={styles.removeText}>Remove Image</Text>
