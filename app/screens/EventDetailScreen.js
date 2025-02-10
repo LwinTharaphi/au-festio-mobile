@@ -6,7 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
-import CustomToast from '../components/CustomToast'; 
+import CustomToast from '../components/CustomToast';
 import {
   View,
   Text,
@@ -716,6 +716,9 @@ export default function EventDetailScreen({ route }) {
           {isSeatsFull ? (
             <Text style={styles.policyText}>Seats are full for this event.</Text>
           ) : null}
+          {isRegistrationClosed ? (
+            <Text style={styles.policyText}>Registration Period is over.</Text>
+          ) : null}
         </View>
 
         {/* Register/Cancel Button */}
@@ -884,24 +887,25 @@ export default function EventDetailScreen({ route }) {
                   )}
                   <View>
                     <Text style={styles.policyText}>By registering, you agree to the terms and conditions of the event.</Text>
-                    <Text style={styles.policyText}>
-                      Refund Policy:
-                      {event.refundPolicy && event.refundPolicy.length > 0 ? (
-                        event.refundPolicy.map((policy, index) => {
-                          let policyText = ` ${policy.percentage}% in ${policy.days} days`;
-                          // Add comma except for the last policy
-                          if (index < event.refundPolicy.length - 1) {
-                            policyText += ', ';
-                          }
-                          return policyText;
-                        })
-                      ) : (
-                        " No Refund Policy"
-                      )}
-                      {event.refundPolicy && event.refundPolicy.length > 0 && (
-                        ` and no refund after ${event.refundPolicy[event.refundPolicy.length - 1].days} days.`
-                      )}
-                    </Text>
+                    {event.isPaid && event.refundPolicy && (
+                      <Text style={styles.policyText}>
+                        Refund Policy:
+                        {event.refundPolicy.length > 0 ? (
+                          <>
+                            {event.refundPolicy.map((policy, index) => {
+                              let policyText = ` ${policy.percentage}% in ${policy.days} days`;
+                              if (index < event.refundPolicy.length - 1) {
+                                policyText += ', ';
+                              }
+                              return policyText;
+                            })}
+                            {` and no refund after ${event.refundPolicy[event.refundPolicy.length - 1].days} days.`}
+                          </>
+                        ) : (
+                          " No Refund Policy"
+                        )}
+                      </Text>
+                    )}
                   </View>
                   <View style={styles.buttonContainer}>
                     <View style={styles.buttonWrapper}>
