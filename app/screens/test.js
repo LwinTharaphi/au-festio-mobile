@@ -9,8 +9,6 @@ import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 import MapView, { Marker } from 'react-native-maps';
-// Import lodash throttle to limit sensor updates.
-import throttle from 'lodash.throttle';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CENTER_X = SCREEN_WIDTH / 2;
@@ -60,16 +58,17 @@ const markers = [
 ];
 
 const ARNavigation = ({ destination, onBack }) => {
-  // IMPORTANT: Ensure the destination prop is memoized in the parent.
-
+  // Basic state variables
   const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [location, setLocation] = useState(null);
   const [heading, setHeading] = useState(0);
   const [distance, setDistance] = useState(0);
 
-  // Use useRef to keep the Animated.Value and sound instance stable.
+  // Use a ref for Animated value to keep its identity stable
   const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  // Use a ref for the sound to avoid re-renders from state changes
   const soundRef = useRef(null);
 
   const [hasArrived, setHasArrived] = useState(false);
@@ -78,14 +77,14 @@ const ARNavigation = ({ destination, onBack }) => {
   const [showRadar, setShowRadar] = useState(true);
   const mockLocationSetRef = useRef(false);
 
-  // Compute destinationData only when location or destination changes.
+  // Memoize destinationData so it recalculates only when location or destination change
   const destinationData = useMemo(() => ({
     exists: !!destination,
     distance: location ? getDistance(location, destination) : 0,
     bearing: location ? getGreatCircleBearing(location, destination) : 0,
-  }), [location, destination]);
+  }), [location, destination]);  //  [oai_citation_attribution:0‡dev.to](https://dev.to/collegewap/how-to-solve-infinity-loop-in-reacts-useeffect-5d6e)
 
-  // Load sound once on mount.
+  // Load sound once on mount; store the instance in a ref
   useEffect(() => {
     const loadSound = async () => {
       const { sound } = await Audio.Sound.createAsync(
@@ -99,38 +98,38 @@ const ARNavigation = ({ destination, onBack }) => {
     };
   }, []);
 
-  // Throttled location update: only update at most once every 500ms.
-  const throttledHandleLocationUpdate = useCallback(
-    throttle((loc) => {
-      // Only update if the movement is significant.
-      if (location && getDistance(location, loc.coords) < 1) return;
-      const newDistance = getDistance(loc.coords, destination);
-      setLocation(loc.coords);
-      setDistance(newDistance);
+  // Subscribe to location and sensor updates when destination changes
+  useEffect(() => {
+    let locationSub;
+    let magnetometerSub;
 
-      if (newDistance <= ARRIVAL_THRESHOLD && !hasArrived) {
-        setHasArrived(true);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        soundRef.current?.replayAsync();
-      } else if (newDistance > ARRIVAL_THRESHOLD && hasArrived) {
-        setHasArrived(false);
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+
+      // Subscribe to GPS updates
+      locationSub = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.BestForNavigation },
+        handleLocationUpdate
+      );
+
+      // Subscribe to magnetometer updates
+      magnetometerSub = Sensors.Magnetometer.addListener(handleMagnetometer);
+
+      // In __DEV__ mode, set a mock location only once
+      if (__DEV__ && destination && !mockLocationSetRef.current) {
+        mockLocationSetRef.current = true;
+        Location.setMockLocationAsync(destination);
       }
-      updateNearbyPOIs(loc.coords);
-    }, 500),
-    [destination, hasArrived, location] // updateNearbyPOIs is defined below and will be included in its dependency array
-  );
+    })();
 
-  // Throttled magnetometer update: only update if the heading changes by at least 1 degree.
-  const throttledHandleMagnetometer = useCallback(
-    throttle(({ x, y }) => {
-      const newHeading = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
-      if (Math.abs(newHeading - heading) < 1) return;
-      setHeading(newHeading);
-    }, 500),
-    [heading]
-  );
+    return () => {
+      locationSub?.remove();
+      magnetometerSub?.remove();
+    };
+  }, [destination]);
 
-  // Wrap updateNearbyPOIs in useCallback so its reference remains stable.
+  // Memoize updating nearby POIs so that the function reference stays stable
   const updateNearbyPOIs = useCallback((currentLocation) => {
     const calculatedPOIs = markers
       .filter(m => m.id !== destination?.id)
@@ -143,33 +142,32 @@ const ARNavigation = ({ destination, onBack }) => {
       .sort((a, b) => a.distance - b.distance)
       .slice(0, POI_LIMIT);
     setNearbyPOIs(calculatedPOIs);
-  }, [destination]);
+  }, [destination]);  //  [oai_citation_attribution:1‡dev.to](https://dev.to/codux/react-lessons-from-the-trenches-useeffect-x-infinity-1e3d)
 
-  // Subscribe to location and sensor updates.
-  useEffect(() => {
-    let locationSub;
-    let magnetometerSub;
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      locationSub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.BestForNavigation },
-        throttledHandleLocationUpdate
-      );
-      magnetometerSub = Sensors.Magnetometer.addListener(throttledHandleMagnetometer);
+  // Handle location updates; memoized to prevent unnecessary re-creations
+  const handleLocationUpdate = useCallback((loc) => {
+    const newDistance = getDistance(loc.coords, destination);
+    setLocation(loc.coords);
+    setDistance(newDistance);
 
-      if (__DEV__ && destination && !mockLocationSetRef.current) {
-        mockLocationSetRef.current = true;
-        Location.setMockLocationAsync(destination);
-      }
-    })();
-    return () => {
-      locationSub?.remove();
-      magnetometerSub?.remove();
-    };
-  }, [destination, throttledHandleLocationUpdate, throttledHandleMagnetometer]);
+    if (newDistance <= ARRIVAL_THRESHOLD && !hasArrived) {
+      setHasArrived(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      soundRef.current?.replayAsync();
+    } else if (newDistance > ARRIVAL_THRESHOLD && hasArrived) {
+      setHasArrived(false);
+    }
 
-  // Update radar POIs when nearbyPOIs or heading changes.
+    updateNearbyPOIs(loc.coords);
+  }, [destination, hasArrived, updateNearbyPOIs]);
+
+  // Memoize magnetometer handler so its reference is stable
+  const handleMagnetometer = useCallback(({ x, y }) => {
+    const newHeading = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+    setHeading(newHeading);
+  }, []);
+
+  // Update radar points of interest when nearbyPOIs or heading changes
   useEffect(() => {
     const newRadarPOIs = nearbyPOIs.map(poi => {
       const angle = (poi.bearing - heading + 360) % 360;
@@ -184,7 +182,7 @@ const ARNavigation = ({ destination, onBack }) => {
     setRadarPOIs(newRadarPOIs);
   }, [nearbyPOIs, heading]);
 
-  // Animate the arrow when location, heading, or destination change.
+  // Animate the directional arrow when location, heading, or destination change
   useEffect(() => {
     if (location && heading !== null && destination) {
       const bearing = getGreatCircleBearing(location, destination);
@@ -198,7 +196,7 @@ const ARNavigation = ({ destination, onBack }) => {
     }
   }, [location, heading, destination, rotateAnim]);
 
-  // Render the radar.
+  // Render the radar component using SVG
   const renderRadar = () => (
     <Svg height={RADAR_SIZE} width={RADAR_SIZE} style={styles.radar}>
       <Circle cx={RADAR_RADIUS} cy={RADAR_RADIUS} r={RADAR_RADIUS} fill="rgba(0,0,0,0.3)" />
@@ -251,6 +249,7 @@ const ARNavigation = ({ destination, onBack }) => {
     </Svg>
   );
 
+  // If camera permissions are not yet available or not granted, show a simple prompt
   if (!permission) return null;
   if (!permission.granted) {
     return (

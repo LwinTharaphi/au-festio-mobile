@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -94,6 +94,9 @@ export default function LocationScreen() {
   const [isSharing, setIsSharing] = useState(false);
 
   const mapRef = useRef(null);
+
+  // Memoize the selected marker so that its reference remains stable when passed to ARNavigation.
+  const memoizedSelectedMarker = useMemo(() => selectedMarker, [selectedMarker]);
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -360,10 +363,11 @@ export default function LocationScreen() {
     );
   }
 
+  // When AR Navigation is shown, pass the memoized destination.
   if (showARNavigation && selectedMarker) {
     return (
       <ARNavigation
-        destination={selectedMarker}
+        destination={memoizedSelectedMarker}
         onBack={() => setShowARNavigation(false)}
       />
     );
