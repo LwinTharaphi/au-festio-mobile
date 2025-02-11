@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import EventStackNavigator from './EventStackNavigator';
 import LocationScreen from '../screens/LocationScreen';
 import CameraScreen from '../screens/CameraScreen';
+import ARCamera from '../screens/ARCamera';
 import ProfileStackNavigator from './ProfileStackNavigator';
 import { useNavigationState } from '@react-navigation/native';
 
@@ -74,6 +75,17 @@ export default function MainTabNavigator({ route, navigation }) {
           tabBarLabel: 'Camera',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="camera" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ARCamera"
+        component={ARCamera}
+        options={{
+          headerShown: false,
+          tabBarLabel: 'ARCamera',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="aperture-outline" size={size} color={color} />
           ),
         }}
       />
