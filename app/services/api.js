@@ -38,6 +38,8 @@
 //   }
 // }
 
+const eventsCache = { data: null, timestamp: 0 }; // Cache for events
+
 async function fetchWithRetry(url, retries = 3, delay = 1000) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -52,38 +54,58 @@ async function fetchWithRetry(url, retries = 3, delay = 1000) {
   throw new Error(`Failed to fetch data from ${url} after ${retries} attempts`);
 }
 
-export async function fetchEvents(firebaseUserId, page = 1, limit = 10) {
+export async function fetchEvents(firebaseUserId, page = 1, limit = 10, cacheDuration = 60000) {
+  const now = Date.now();
+
+  // Use cached data if it's still valid
+  if (eventsCache.data && now - eventsCache.timestamp < cacheDuration) {
+    console.log("Returning cached events data.");
+    return eventsCache.data;
+  }
+
   try {
-    const organizers = await fetchWithRetry('https://au-festio.vercel.app/api/event-organizers');
+    const organizers = await fetchWithRetry("https://au-festio.vercel.app/api/event-organizers");
+    
+    // Fetch events for all organizers in parallel
     const eventFetchPromises = organizers.map((organizer) =>
       fetchWithRetry(`https://au-festio.vercel.app/api/organizers/${organizer._id}/events?page=${page}&limit=${limit}`)
-        .catch(() => ({ events: [] })) // Fail gracefully
+        .then((data) => ({ ...data, organizerId: organizer._id })) // Attach organizer ID
+        .catch(() => ({ events: [], organizerId: organizer._id })) // Fail gracefully
     );
 
     const allEventsResults = await Promise.allSettled(eventFetchPromises);
-    const eventsData = allEventsResults.map((result) => result.status === "fulfilled" ? result.value : { events: [] });
-    const registeredStatusPromises = eventsData.flatMap((eventData, index) =>
-      eventData.events.map((event) =>
-        fetchEventByFirebaseUserId(organizers[index]._id, event._id, firebaseUserId)
-          .then((isRegistered) => ({
-            ...event,
-            isRegistered: isRegistered !== undefined ? isRegistered : false,
-          }))
-          .catch(() => ({ ...event, isRegistered: false })) // Default to false on failure
-      )
+    
+    // Process results
+    const eventsData = allEventsResults.map((result) =>
+      result.status === "fulfilled" ? result.value : { events: [], organizerId: null }
+    );
+
+    // Flatten event list with organizer IDs
+    const allEvents = eventsData.flatMap(({ events, organizerId }) =>
+      events.map((event) => ({ ...event, organizerId }))
+    );
+
+    // Fetch user registration statuses in parallel
+    const registeredStatusPromises = allEvents.map((event) =>
+      fetchEventByFirebaseUserId(event.organizerId, event._id, firebaseUserId)
+        .then((isRegistered) => ({ ...event, isRegistered }))
+        .catch(() => ({ ...event, isRegistered: false }))
     );
 
     const updatedEvents = await Promise.allSettled(registeredStatusPromises);
+    const finalEvents = updatedEvents.map((result) => (result.status === "fulfilled" ? result.value : null)).filter(Boolean);
 
-    let eventIndex = 0;
-    const finalData = organizers.map((organizer, index) => {
-      const organizerEvents = eventsData[index].events.map(() => updatedEvents[eventIndex++].value);
-      return {
-        organizer,
-        events: organizerEvents || [],
-        metadata: eventsData[index]?.metadata || {},
-      };
-    });
+    // Reconstruct data grouped by organizers
+    const finalData = organizers.map((organizer) => ({
+      organizer,
+      events: finalEvents.filter((event) => event.organizerId === organizer._id),
+      metadata: eventsData.find((data) => data.organizerId === organizer._id)?.metadata || {},
+    }));
+
+    // Store in cache
+    eventsCache.data = finalData;
+    eventsCache.timestamp = now;
+
     console.log("Successfully fetched all events!");
     return finalData;
   } catch (error) {
@@ -92,8 +114,6 @@ export async function fetchEvents(firebaseUserId, page = 1, limit = 10) {
   }
 }
 
-
-
 export async function fetchEventByFirebaseUserId(organizerId, eventId, firebaseUserId) {
   try {
     const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students`);
@@ -101,27 +121,15 @@ export async function fetchEventByFirebaseUserId(organizerId, eventId, firebaseU
     if (!response.ok) throw new Error("Failed to fetch event students");
 
     const students = await response.json();
-
-    // Ensure students array exists
     if (!Array.isArray(students)) return false;
 
-    // Get all student records for the user
-    const userRegistrations = students
-      .filter(student => student.firebaseUID === firebaseUserId)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sort by latest first
+    const latestStudent = students
+      .filter((student) => student.firebaseUID === firebaseUserId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]; // Get latest registration
 
-    if (userRegistrations.length === 0) {
-      return false; // No records, allow registration
-    }
-
-    const latestStudent = userRegistrations[0]; // Get the latest student record
-
-    // If the latest record is not refunded, return true (already registered)
-    return latestStudent.refundStatus !== "refunded";
+    return latestStudent ? latestStudent.refundStatus !== "refunded" : false;
   } catch (error) {
     console.error(error);
-    return false; // Return false if any error occurs
+    return false; // Assume not registered on failure
   }
 }
-
-

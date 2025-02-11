@@ -668,7 +668,19 @@ export default function EventDetailScreen({ route }) {
         {/* Event Details */}
         <View style={styles.detailsContainer}>
           {/* Event Title */}
-          <Text style={styles.title}>{event.eventName}</Text>
+          <Text style={styles.title}>
+            {event.eventName}
+            {(isSeatsFull || isRegistrationClosed) && (
+              <Text style={styles.conditionText}>
+                {" ("}
+                {isSeatsFull && "Seats are full"}
+                {isSeatsFull && isRegistrationClosed && " | "}
+                {isRegistrationClosed && "Registration Period is over"}
+                {")"}
+              </Text>
+            )}
+          </Text>
+
 
           <View style={styles.line} />
 
@@ -702,7 +714,7 @@ export default function EventDetailScreen({ route }) {
             {event.isPaid ? `Fees: ${event.price || 'N/A'} TBH` : 'It is a free event'}
           </Text>
 
-          {event.discount ? (
+          {event.isPaid && event.discount ? (
             timeDifference < 24 ? (
               <Text style={styles.policyText}>
                 You get {event.discount}% early bird discount if you register today!!
@@ -710,14 +722,8 @@ export default function EventDetailScreen({ route }) {
             ) : (
               <Text style={styles.policyText}>The early bird discount period has expired.</Text>
             )
-          ) : (
+          ) : event.isPaid ? (
             <Text style={styles.policyText}>No discount applied for this event.</Text>
-          )}
-          {isSeatsFull ? (
-            <Text style={styles.policyText}>Seats are full for this event.</Text>
-          ) : null}
-          {isRegistrationClosed ? (
-            <Text style={styles.policyText}>Registration Period is over.</Text>
           ) : null}
         </View>
 
@@ -956,6 +962,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+  conditionText: {
+    fontSize: 14, // Smaller font size
+    fontWeight: "bold", // Optional: make it lighter if needed
   },
   detail: {
     fontSize: 16,
