@@ -7,6 +7,7 @@ import {
   View,
   Image,
   ScrollView,
+  Modal, // Import Modal for preview
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -30,10 +31,17 @@ export default function App() {
   const [flashMode, setFlashMode] = useState('off'); // Options: off, on, auto
   const [facing, setFacing] = useState('back'); // Camera facing
 
-  // States for composite capture when a filter is active
+  // States for composite capture when a filter or fun overlay is active
   const [capturedImage, setCapturedImage] = useState(null); // Raw captured image URI
   const [isCompositing, setIsCompositing] = useState(false); // Flag to show composite view
   const [isImageLoaded, setIsImageLoaded] = useState(false); // Indicates that the image in composite view has loaded
+
+  // New state for the fun overlay feature
+  const [funOverlayActive, setFunOverlayActive] = useState(false);
+
+  // --- New states for preview modal ---
+  const [selectedImage, setSelectedImage] = useState(null); // Holds the image selected from gallery
+  const [previewVisible, setPreviewVisible] = useState(false); // Controls preview modal visibility
 
   // Refs for CameraView and composite view container
   const cameraRef = useRef(null);
@@ -58,6 +66,8 @@ export default function App() {
     const nextIndex = (currentIndex + 1) % modes.length;
     setFlashMode(modes[nextIndex]);
   };
+  // New fun overlay toggle
+  const toggleFunOverlay = () => setFunOverlayActive((prev) => !prev);
   const resetSettings = () => {
     setZoom(0);
     setFocus(0);
@@ -68,6 +78,7 @@ export default function App() {
     setFilter('none');
     setRatio('4:3');
     setFlashMode('off');
+    setFunOverlayActive(false);
   };
 
   // --- Save Photo Function ---
@@ -110,17 +121,18 @@ export default function App() {
     }
   };
 
-  // Helper function that performs the capture
+  // Modified doCapture: use composite capture if either filter is active or fun overlay is enabled.
   const doCapture = async () => {
     try {
-      if (filter !== 'none') {
-        // If a filter is active, capture the raw image first
+      if (filter !== 'none' || funOverlayActive) {
+        // Capture raw image first, then composite to include overlay(s)
         const captured = await cameraRef.current.takePictureAsync();
+        console.log('Captured raw image URI:', captured.uri);
         setCapturedImage(captured.uri);
         setIsCompositing(true);
         setIsImageLoaded(false); // Reset flag for new image
       } else {
-        // Normal capture without filter overlay
+        // Normal capture without overlays
         const captured = await cameraRef.current.takePictureAsync();
         setGallery((prev) => [...prev, captured.uri]);
         Alert.alert('Photo Captured', 'Your photo was captured successfully!');
@@ -130,8 +142,7 @@ export default function App() {
     }
   };
 
-  // When the composite view is rendered and the image has loaded,
-  // capture it (this composite includes both the captured image and the filter overlay)
+  // When the composite view is rendered and loaded, capture it.
   useEffect(() => {
     if (isCompositing && capturedImage && isImageLoaded) {
       setTimeout(async () => {
@@ -146,7 +157,7 @@ export default function App() {
           setIsImageLoaded(false);
           Alert.alert(
             'Photo Captured',
-            'Your photo with filter was captured successfully!'
+            'Your photo with overlay was captured successfully!'
           );
         } catch (error) {
           console.error('Error capturing composite image:', error);
@@ -157,7 +168,7 @@ export default function App() {
     }
   }, [isCompositing, capturedImage, isImageLoaded]);
 
-  // Burst capture: capture 5 photos in succession using the native capture
+  // Burst capture: capture 5 photos in succession using native capture.
   const burstCapture = async () => {
     if (cameraRef.current) {
       const burstPhotos = [];
@@ -175,8 +186,6 @@ export default function App() {
     }
   };
 
-  // --- Render ---
-  // Instead of returning early, always render a container that conditionally shows either a permission message or the full UI.
   return (
     <View style={styles.container}>
       {(!permission || !permission.granted) ? (
@@ -229,6 +238,12 @@ export default function App() {
                     : {},
                 ]}
               />
+            )}
+            {/* Fun overlay view appears over the preview */}
+            {funOverlayActive && (
+              <View style={styles.funOverlay}>
+                <Text style={styles.funOverlayText}>🎉 Fun Time! 🎉</Text>
+              </View>
             )}
             {countdown !== null && (
               <View style={styles.countdownOverlay}>
@@ -301,6 +316,12 @@ export default function App() {
                   Gallery: {galleryVisible ? 'On' : 'Off'}
                 </Text>
               </TouchableOpacity>
+              {/* New fun overlay toggle */}
+              <TouchableOpacity onPress={toggleFunOverlay} style={styles.toggleButton}>
+                <Text style={styles.toggleButtonText}>
+                  Fun: {funOverlayActive ? 'On' : 'Off'}
+                </Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={resetSettings} style={styles.toggleButton}>
                 <Text style={styles.toggleButtonText}>Reset</Text>
               </TouchableOpacity>
@@ -330,16 +351,56 @@ export default function App() {
             <View style={styles.galleryContainer}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {gallery.map((uri, index) => (
-                  <TouchableOpacity key={index} onPress={() => savePhoto(uri)}>
+                  // Modified onPress to open preview instead of saving directly
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => {
+                      setSelectedImage(uri);
+                      setPreviewVisible(true);
+                    }}
+                  >
                     <Image source={{ uri }} style={styles.galleryImage} />
-                    <Text style={styles.saveText}>Save</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
           )}
 
-          {/* Composite View for Filter Processing */}
+          {/* Preview Modal: shows the image in full screen with Save and Cancel buttons */}
+          {previewVisible && selectedImage && (
+            <Modal
+              transparent={false}
+              animationType="slide"
+              onRequestClose={() => setPreviewVisible(false)}
+            >
+              <View style={styles.previewContainer}>
+                <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+                <View style={styles.previewButtons}>
+                  <TouchableOpacity
+                    style={styles.previewButton}
+                    onPress={() => {
+                      savePhoto(selectedImage);
+                      setPreviewVisible(false);
+                      setSelectedImage(null);
+                    }}
+                  >
+                    <Text style={styles.previewButtonText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.previewButton}
+                    onPress={() => {
+                      setPreviewVisible(false);
+                      setSelectedImage(null);
+                    }}
+                  >
+                    <Text style={styles.previewButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          )}
+
+          {/* Composite View for processing overlays */}
           {isCompositing && capturedImage && (
             <View collapsable={false} ref={compositeRef} style={styles.compositeContainer}>
               <Image
@@ -364,6 +425,11 @@ export default function App() {
                       : {},
                   ]}
                 />
+              )}
+              {funOverlayActive && (
+                <View style={styles.funOverlay}>
+                  <Text style={styles.funOverlayText}>🎉 Fun Time! 🎉</Text>
+                </View>
               )}
             </View>
           )}
@@ -422,12 +488,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 20,
   },
-  bottomButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
+  bottomButtonText: { color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
   captureButton: {
     width: 70,
     height: 70,
@@ -438,12 +499,7 @@ const styles = StyleSheet.create({
     borderWidth: 5,
     borderColor: '#ddd',
   },
-  captureButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#808080',
-  },
+  captureButtonInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#808080' },
   burstButton: { marginLeft: 20, padding: 8, backgroundColor: '#FFAA00', borderRadius: 5 },
   burstButtonText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
   gridOverlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
@@ -468,7 +524,49 @@ const styles = StyleSheet.create({
   countdownText: { fontSize: 60, color: 'white', fontWeight: 'bold' },
   galleryContainer: { position: 'absolute', bottom: 90, width: '100%', height: 80, backgroundColor: 'rgba(0,0,0,0.5)' },
   galleryImage: { width: 80, height: 80, margin: 5, borderRadius: 5 },
-  saveText: { color: 'white', fontSize: 8, textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
   compositeContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 },
   compositeImage: { width: '100%', height: '100%' },
+  // Fun overlay styles
+  funOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  funOverlayText: {
+    fontSize: 40,
+    color: '#FFD700',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
+  },
+  // Styles for preview modal
+  previewContainer: {
+    flex: 1,
+    backgroundColor: 'black',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: '80%',
+    resizeMode: 'contain',
+  },
+  previewButtons: {
+    flexDirection: 'row',
+    marginTop: 20,
+  },
+  previewButton: {
+    backgroundColor: '#00000080',
+    padding: 10,
+    borderRadius: 5,
+    marginHorizontal: 20,
+  },
+  previewButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
 });
