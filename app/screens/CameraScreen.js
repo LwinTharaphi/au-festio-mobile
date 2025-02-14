@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Alert,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   Image,
   ScrollView,
-  Modal, // Import Modal for preview
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -34,14 +34,17 @@ export default function App() {
   // States for composite capture when a filter or fun overlay is active
   const [capturedImage, setCapturedImage] = useState(null); // Raw captured image URI
   const [isCompositing, setIsCompositing] = useState(false); // Flag to show composite view
-  const [isImageLoaded, setIsImageLoaded] = useState(false); // Indicates that the image in composite view has loaded
+  const [isImageLoaded, setIsImageLoaded] = useState(false); // Indicates that the composite image has loaded
 
-  // New state for the fun overlay feature
+  // New state for the fun overlay feature (available for preview)
   const [funOverlayActive, setFunOverlayActive] = useState(false);
 
-  // --- New states for preview modal ---
+  // New states for preview modal
   const [selectedImage, setSelectedImage] = useState(null); // Holds the image selected from gallery
   const [previewVisible, setPreviewVisible] = useState(false); // Controls preview modal visibility
+
+  // Ref to hold a resolver for composite capture (used in single & burst modes)
+  const compositeResolverRef = useRef(null);
 
   // Refs for CameraView and composite view container
   const cameraRef = useRef(null);
@@ -66,7 +69,7 @@ export default function App() {
     const nextIndex = (currentIndex + 1) % modes.length;
     setFlashMode(modes[nextIndex]);
   };
-  // New fun overlay toggle
+  // Fun overlay toggle (for preview)
   const toggleFunOverlay = () => setFunOverlayActive((prev) => !prev);
   const resetSettings = () => {
     setZoom(0);
@@ -99,8 +102,20 @@ export default function App() {
     }
   };
 
+  // --- Delete Photo Function ---
+  const deletePhoto = (index) => {
+    setGallery((prev) => {
+      const newGallery = [...prev];
+      newGallery.splice(index, 1);
+      return newGallery;
+    });
+  };
+
   // --- Capture Functions ---
   const capturePhoto = async () => {
+    // Prevent multiple taps if timer is already running
+    if (countdown !== null) return;
+
     if (cameraRef.current) {
       if (timerDelay > 0) {
         setCountdown(timerDelay);
@@ -121,61 +136,78 @@ export default function App() {
     }
   };
 
-  // Modified doCapture: use composite capture if either filter is active or fun overlay is enabled.
+  // For single capture, if filter or fun overlay is active, use composite capture.
   const doCapture = async () => {
     try {
       if (filter !== 'none' || funOverlayActive) {
-        // Capture raw image first, then composite to include overlay(s)
         const captured = await cameraRef.current.takePictureAsync();
         console.log('Captured raw image URI:', captured.uri);
-        setCapturedImage(captured.uri);
-        setIsCompositing(true);
-        setIsImageLoaded(false); // Reset flag for new image
+        // Await composite capture so that only one image is added.
+        const compositeUri = await compositeCapture(captured.uri);
+        setGallery((prev) => [...prev, compositeUri]);
       } else {
-        // Normal capture without overlays
         const captured = await cameraRef.current.takePictureAsync();
         setGallery((prev) => [...prev, captured.uri]);
         Alert.alert('Photo Captured', 'Your photo was captured successfully!');
       }
     } catch (error) {
       console.error('Error capturing photo:', error);
+      Alert.alert('Error', 'There was an error capturing the photo.');
     }
   };
 
-  // When the composite view is rendered and loaded, capture it.
+  // compositeCapture sets the composite state and returns a Promise that resolves with the composite image URI.
+  const compositeCapture = (rawUri) => {
+    return new Promise((resolve, reject) => {
+      try {
+        setCapturedImage(rawUri);
+        setIsCompositing(true);
+        setIsImageLoaded(false);
+        compositeResolverRef.current = resolve;
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
+
+  // When the composite view's image loads, capture it and resolve the stored promise.
   useEffect(() => {
-    if (isCompositing && capturedImage && isImageLoaded) {
-      setTimeout(async () => {
+    if (isCompositing && capturedImage && isImageLoaded && compositeResolverRef.current) {
+      (async () => {
         try {
           const compositeUri = await captureRef(compositeRef, {
             format: 'png',
             quality: 1,
           });
-          setGallery((prev) => [...prev, compositeUri]);
+          const resolver = compositeResolverRef.current;
+          compositeResolverRef.current = null;
           setCapturedImage(null);
           setIsCompositing(false);
           setIsImageLoaded(false);
-          Alert.alert(
-            'Photo Captured',
-            'Your photo with overlay was captured successfully!'
-          );
+          resolver(compositeUri);
         } catch (error) {
           console.error('Error capturing composite image:', error);
+          compositeResolverRef.current = null;
           setIsCompositing(false);
           setIsImageLoaded(false);
         }
-      }, 100);
+      })();
     }
   }, [isCompositing, capturedImage, isImageLoaded]);
 
-  // Burst capture: capture 5 photos in succession using native capture.
+  // Burst capture: for each burst image, if filter or fun overlay is active, process via compositeCapture.
   const burstCapture = async () => {
     if (cameraRef.current) {
       const burstPhotos = [];
       for (let i = 0; i < 5; i++) {
         try {
           const captured = await cameraRef.current.takePictureAsync();
-          burstPhotos.push(captured.uri);
+          console.log('Burst raw image URI:', captured.uri);
+          let finalUri = captured.uri;
+          if (filter !== 'none' || funOverlayActive) {
+            finalUri = await compositeCapture(captured.uri);
+          }
+          burstPhotos.push(finalUri);
         } catch (error) {
           console.error('Error capturing burst photo:', error);
         }
@@ -239,7 +271,6 @@ export default function App() {
                 ]}
               />
             )}
-            {/* Fun overlay view appears over the preview */}
             {funOverlayActive && (
               <View style={styles.funOverlay}>
                 <Text style={styles.funOverlayText}>🎉 Fun Time! 🎉</Text>
@@ -316,7 +347,6 @@ export default function App() {
                   Gallery: {galleryVisible ? 'On' : 'Off'}
                 </Text>
               </TouchableOpacity>
-              {/* New fun overlay toggle */}
               <TouchableOpacity onPress={toggleFunOverlay} style={styles.toggleButton}>
                 <Text style={styles.toggleButtonText}>
                   Fun: {funOverlayActive ? 'On' : 'Off'}
@@ -346,12 +376,11 @@ export default function App() {
             </TouchableOpacity>
           </View>
 
-          {/* Gallery Preview */}
+          {/* Gallery Preview with Modal */}
           {galleryVisible && (
             <View style={styles.galleryContainer}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {gallery.map((uri, index) => (
-                  // Modified onPress to open preview instead of saving directly
                   <TouchableOpacity
                     key={index}
                     onPress={() => {
@@ -366,7 +395,7 @@ export default function App() {
             </View>
           )}
 
-          {/* Preview Modal: shows the image in full screen with Save and Cancel buttons */}
+          {/* Preview Modal */}
           {previewVisible && selectedImage && (
             <Modal
               transparent={false}
@@ -395,18 +424,35 @@ export default function App() {
                   >
                     <Text style={styles.previewButtonText}>Cancel</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.previewButton}
+                    onPress={() => {
+                      deletePhoto(gallery.indexOf(selectedImage));
+                      setPreviewVisible(false);
+                      setSelectedImage(null);
+                    }}
+                  >
+                    <Text style={styles.previewButtonText}>Delete</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </Modal>
           )}
 
-          {/* Composite View for processing overlays */}
+          {/* Composite View for processing overlays (hidden) */}
           {isCompositing && capturedImage && (
-            <View collapsable={false} ref={compositeRef} style={styles.compositeContainer}>
+            <View
+              collapsable={false}
+              ref={compositeRef}
+              style={styles.compositeContainer}
+            >
               <Image
                 source={{ uri: capturedImage }}
                 style={styles.compositeImage}
-                onLoadEnd={() => setIsImageLoaded(true)}
+                onLoadEnd={() => {
+                  setIsImageLoaded(true);
+                  handleCompositeLoad();
+                }}
               />
               {filter !== 'none' && (
                 <View
@@ -438,6 +484,29 @@ export default function App() {
     </View>
   );
 }
+
+// Helper function: When the composite view image loads, capture it and resolve the stored promise.
+const handleCompositeLoad = async () => {
+  if (compositeResolverRef.current) {
+    try {
+      const compositeUri = await captureRef(compositeRef, {
+        format: 'png',
+        quality: 1,
+      });
+      const resolver = compositeResolverRef.current;
+      compositeResolverRef.current = null;
+      setCapturedImage(null);
+      setIsCompositing(false);
+      setIsImageLoaded(false);
+      resolver(compositeUri);
+    } catch (error) {
+      console.error('Error in handleCompositeLoad:', error);
+      compositeResolverRef.current = null;
+      setIsCompositing(false);
+      setIsImageLoaded(false);
+    }
+  }
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -524,9 +593,10 @@ const styles = StyleSheet.create({
   countdownText: { fontSize: 60, color: 'white', fontWeight: 'bold' },
   galleryContainer: { position: 'absolute', bottom: 90, width: '100%', height: 80, backgroundColor: 'rgba(0,0,0,0.5)' },
   galleryImage: { width: 80, height: 80, margin: 5, borderRadius: 5 },
+  saveText: { color: 'white', fontSize: 8, textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
   compositeContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 },
   compositeImage: { width: '100%', height: '100%' },
-  // Fun overlay styles
+  // Fun overlay styles (available for preview)
   funOverlay: {
     position: 'absolute',
     top: 0,
@@ -543,7 +613,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 5,
   },
-  // Styles for preview modal
+  // Preview modal styles
   previewContainer: {
     flex: 1,
     backgroundColor: 'black',
