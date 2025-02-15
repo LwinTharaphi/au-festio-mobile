@@ -92,7 +92,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./local/assets/notification_icon.png",
+          "icon": "./assets/images/au_festio_logo.jpg",
           "color": "#ffffff",
           // "defaultChannel": "default",
           "enableBackgroundRemoteNotifications": true
