@@ -189,6 +189,7 @@ export default function StaffRolesScreen({ route }) {
           onPress: () => {
             const firebaseUID = user?.uid;
             const payload = { ...formData, role: formData.role, event, firebaseUID, expoPushToken };
+            console.log("Payload", payload);
             fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

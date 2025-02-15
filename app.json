@@ -3,6 +3,7 @@
     "sdkVersion": "52.0.0",
     "name": "au-festio-mobile",
     "slug": "au-festio-mobile",
+    "owner": "aeliawin",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/au_festio_logo.jpg",
