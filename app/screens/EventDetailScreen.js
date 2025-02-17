@@ -164,7 +164,7 @@ export default function EventDetailScreen({ route }) {
           setQrData(data.qrCodeData);
           console.log("Check in QR code data:", data.qrCodeData);
         } else {
-          console.error("QR code data not found.");
+          // console.error("QR code data not found.");
         }
       } catch (error) {
         console.error("Error fetching check-in QR code:", error);

@@ -45,7 +45,7 @@ async function fetchWithRetry(url, retries = 3, delay = 1000) {
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
       return await response.json();
     } catch (error) {
-      console.error(`Attempt ${attempt} failed: ${error.message}`);
+      // console.error(`Attempt ${attempt} failed: ${error.message}`);
       if (attempt < retries) await new Promise((res) => setTimeout(res, delay));
     }
   }
