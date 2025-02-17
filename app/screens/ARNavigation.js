@@ -9,7 +9,6 @@ import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 import MapView, { Marker } from 'react-native-maps';
-// Import lodash throttle to limit sensor updates.
 import throttle from 'lodash.throttle';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -60,32 +59,27 @@ const markers = [
 ];
 
 const ARNavigation = ({ destination, onBack }) => {
-  // IMPORTANT: Ensure the destination prop is memoized in the parent.
-
   const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [location, setLocation] = useState(null);
   const [heading, setHeading] = useState(0);
   const [distance, setDistance] = useState(0);
-
-  // Use useRef to keep the Animated.Value and sound instance stable.
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const soundRef = useRef(null);
-
   const [hasArrived, setHasArrived] = useState(false);
   const [nearbyPOIs, setNearbyPOIs] = useState([]);
   const [radarPOIs, setRadarPOIs] = useState([]);
   const [showRadar, setShowRadar] = useState(true);
   const mockLocationSetRef = useRef(false);
 
-  // Compute destinationData only when location or destination changes.
   const destinationData = useMemo(() => ({
     exists: !!destination,
     distance: location ? getDistance(location, destination) : 0,
     bearing: location ? getGreatCircleBearing(location, destination) : 0,
   }), [location, destination]);
 
-  // Load sound once on mount.
+
+  // Load sound once on mount
   useEffect(() => {
     const loadSound = async () => {
       const { sound } = await Audio.Sound.createAsync(
@@ -94,43 +88,10 @@ const ARNavigation = ({ destination, onBack }) => {
       soundRef.current = sound;
     };
     loadSound();
-    return () => {
-      soundRef.current?.unloadAsync();
-    };
+    return () => soundRef.current?.unloadAsync();
   }, []);
 
-  // Throttled location update: only update at most once every 500ms.
-  const throttledHandleLocationUpdate = useCallback(
-    throttle((loc) => {
-      // Only update if the movement is significant.
-      if (location && getDistance(location, loc.coords) < 1) return;
-      const newDistance = getDistance(loc.coords, destination);
-      setLocation(loc.coords);
-      setDistance(newDistance);
-
-      if (newDistance <= ARRIVAL_THRESHOLD && !hasArrived) {
-        setHasArrived(true);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        soundRef.current?.replayAsync();
-      } else if (newDistance > ARRIVAL_THRESHOLD && hasArrived) {
-        setHasArrived(false);
-      }
-      updateNearbyPOIs(loc.coords);
-    }, 500),
-    [destination, hasArrived, location] // updateNearbyPOIs is defined below and will be included in its dependency array
-  );
-
-  // Throttled magnetometer update: only update if the heading changes by at least 1 degree.
-  const throttledHandleMagnetometer = useCallback(
-    throttle(({ x, y }) => {
-      const newHeading = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
-      if (Math.abs(newHeading - heading) < 1) return;
-      setHeading(newHeading);
-    }, 500),
-    [heading]
-  );
-
-  // Wrap updateNearbyPOIs in useCallback so its reference remains stable.
+  // Update nearby POIs
   const updateNearbyPOIs = useCallback((currentLocation) => {
     const calculatedPOIs = markers
       .filter(m => m.id !== destination?.id)
@@ -145,17 +106,54 @@ const ARNavigation = ({ destination, onBack }) => {
     setNearbyPOIs(calculatedPOIs);
   }, [destination]);
 
+  // Throttled location update: only update at most once every 500ms.
+  const throttledHandleLocationUpdate = useCallback(
+    throttle((loc) => {
+      if (location && getDistance(location, loc.coords) < 1) return;
+      const newDistance = getDistance(loc.coords, destination);
+      setLocation(loc.coords);
+      setDistance(newDistance);
+
+      if (newDistance <= ARRIVAL_THRESHOLD) {
+        if (!hasArrived) {
+          setHasArrived(true);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          soundRef.current?.replayAsync();
+        }
+      } else if (hasArrived) {
+        setHasArrived(false);
+      }
+      updateNearbyPOIs(loc.coords);
+    }, 500),
+    [destination, updateNearbyPOIs]
+  );
+
+  // Throttled magnetometer update: only update if the heading changes by at least 1 degree.
+  const throttledHandleMagnetometer = useCallback(
+    throttle(({ x, y }) => {
+      const newHeading = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+      setHeading(prev => {
+        if (Math.abs(newHeading - prev) < 1) return prev;
+        return newHeading;
+      });
+    }, 500),
+    []
+  );
+
   // Subscribe to location and sensor updates.
   useEffect(() => {
     let locationSub;
     let magnetometerSub;
+    
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
+      
       locationSub = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.BestForNavigation },
         throttledHandleLocationUpdate
       );
+      
       magnetometerSub = Sensors.Magnetometer.addListener(throttledHandleMagnetometer);
 
       if (__DEV__ && destination && !mockLocationSetRef.current) {
@@ -163,6 +161,7 @@ const ARNavigation = ({ destination, onBack }) => {
         Location.setMockLocationAsync(destination);
       }
     })();
+
     return () => {
       locationSub?.remove();
       magnetometerSub?.remove();
@@ -184,7 +183,7 @@ const ARNavigation = ({ destination, onBack }) => {
     setRadarPOIs(newRadarPOIs);
   }, [nearbyPOIs, heading]);
 
-  // Animate the arrow when location, heading, or destination change.
+  // Animate the arrow when location, heading, or destination change
   useEffect(() => {
     if (location && heading !== null && destination) {
       const bearing = getGreatCircleBearing(location, destination);
@@ -192,184 +191,195 @@ const ARNavigation = ({ destination, onBack }) => {
       Animated.spring(rotateAnim, {
         toValue: -relativeAngle,
         useNativeDriver: true,
-        friction: 6,
-        tension: 50,
+        friction: 8, // Increased friction for smoother movement
+        tension: 60, // Increased tension for faster response
       }).start();
     }
   }, [location, heading, destination, rotateAnim]);
 
-  // Render the radar.
-  const renderRadar = () => (
-    <Svg height={RADAR_SIZE} width={RADAR_SIZE} style={styles.radar}>
-      <Circle cx={RADAR_RADIUS} cy={RADAR_RADIUS} r={RADAR_RADIUS} fill="rgba(0,0,0,0.3)" />
-      <G stroke="rgba(255,255,255,0.2)" strokeWidth="1">
-        {[0.25, 0.5, 0.75].map(r => (
-          <Circle key={r} cx={RADAR_RADIUS} cy={RADAR_RADIUS} r={RADAR_RADIUS * r} fill="none" />
-        ))}
-      </G>
-      {radarPOIs.map(poi => (
-        <G key={poi.id} x={poi.x} y={poi.y}>
-          <Circle r="4" fill="#FF6B6B" stroke="#FFF" strokeWidth="1" />
-          <SvgText
-            x="0"
-            y="-8"
-            fill="white"
-            fontSize="10"
-            textAnchor="middle"
-            fontWeight="bold"
-            stroke="rgba(0,0,0,0.5)"
-            strokeWidth="1"
-          >
-            {poi.name.split(' ')[0]}
-          </SvgText>
-        </G>
+// Render the radar.
+const renderRadar = () => (
+  <Svg height={RADAR_SIZE} width={RADAR_SIZE} style={styles.radar}>
+    <Circle cx={RADAR_RADIUS} cy={RADAR_RADIUS} r={RADAR_RADIUS} fill="rgba(0,0,0,0.3)" />
+    <G stroke="rgba(255,255,255,0.2)" strokeWidth="1">
+      {[0.25, 0.5, 0.75].map(r => (
+        <Circle key={r} cx={RADAR_RADIUS} cy={RADAR_RADIUS} r={RADAR_RADIUS * r} fill="none" />
       ))}
-      <Circle cx={RADAR_RADIUS} cy={RADAR_RADIUS} r="5" fill="#4D96FF" />
-      {destinationData.exists && destinationData.distance <= RADAR_MAX_DISTANCE && (
-        (() => {
-          const angle = (destinationData.bearing - heading + 360) % 360;
-          const angleRad = (angle - 90) * (Math.PI / 180);
-          const ratio = destinationData.distance / RADAR_MAX_DISTANCE;
-          return (
-            <G x={RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.cos(angleRad))}
-               y={RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.sin(angleRad))}>
-              <Circle r="6" fill="#00FF00" stroke="#FFF" strokeWidth="1.5" />
-              <SvgText
-                x="0"
-                y="-10"
-                fill="#00FF00"
-                fontSize="10"
-                textAnchor="middle"
-                fontWeight="bold"
-              >
-                {destination.name.split(' ')[0]}
-              </SvgText>
-            </G>
-          );
-        })()
-      )}
-    </Svg>
-  );
-
-  if (!permission) return null;
-  if (!permission.granted) {
-    return (
-      <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>Camera permission required for AR navigation</Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>Enable Camera</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <CameraView style={styles.camera} facing={facing}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={28} color="white" />
-        </TouchableOpacity>
-        <Animated.View style={[styles.arrowContainer, {
-          transform: [{
-            rotate: rotateAnim.interpolate({
-              inputRange: [0, 360],
-              outputRange: ['0deg', '360deg']
-            })
-          }]
-        }]}>
-          <Svg height="120" width="120">
-            <Path
-              d="M60 10 L110 110 L60 80 L10 110 Z"
-              fill={hasArrived ? '#00FF00' : distance < 50 ? '#FFA500' : '#FF5555'}
-              opacity={0.9}
-              stroke="white"
-              strokeWidth="2"
-            />
-          </Svg>
-        </Animated.View>
-        <View style={styles.distanceContainer}>
-          <Text style={styles.distanceText}>
-            {hasArrived ? `🎉 Arrived at ${destination.name}` : `${Math.round(distance)}m to ${destination.name}`}
-          </Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.radarToggle} 
-          onPress={() => setShowRadar(!showRadar)}
+    </G>
+    {radarPOIs.map(poi => (
+      <G key={poi.id} x={poi.x} y={poi.y}>
+        <Circle r="4" fill="#FF6B6B" stroke="#FFF" strokeWidth="1" />
+        <SvgText
+          x="0"
+          y="-8"
+          fill="white"
+          fontSize="10"
+          textAnchor="middle"
+          fontWeight="bold"
+          stroke="rgba(0,0,0,0.5)"
+          strokeWidth="1"
         >
-          <Ionicons name={showRadar ? "eye-off" : "eye"} size={24} color="white" />
-        </TouchableOpacity>
-        {showRadar && (
-          <View style={styles.radarContainer}>
-            {renderRadar()}
-            <Text style={styles.radarText}>Nearby Points of Interest</Text>
-          </View>
-        )}
-        {!hasArrived && (
-          <Svg style={StyleSheet.absoluteFill}>
-            <Path
-              d={`M${CENTER_X} ${SCREEN_HEIGHT} L${CENTER_X} ${CENTER_Y}`}
-              stroke="rgba(255,255,255,0.5)"
-              strokeWidth="2"
-              strokeDasharray="8 5"
-            />
-          </Svg>
-        )}
-        <View style={styles.mapContainer}>
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: location ? location.latitude : destination.latitude,
-              longitude: location ? location.longitude : destination.longitude,
-              latitudeDelta: 0.002,
-              longitudeDelta: 0.002,
-            }}
-            zoomEnabled={false}
-            scrollEnabled={false}
-            rotateEnabled={false}
-            pitchEnabled={false}
-            loadingEnabled={true}
-            loadingIndicatorColor="#666666"
-            loadingBackgroundColor="#eeeeee"
+          {poi.name.split(' ')[0]}
+        </SvgText>
+      </G>
+    ))}
+    <Circle cx={RADAR_RADIUS} cy={RADAR_RADIUS} r="5" fill="#4D96FF" />
+    {destinationData.exists && destinationData.distance <= RADAR_MAX_DISTANCE && (
+      (() => {
+        const angle = (destinationData.bearing - heading + 360) % 360;
+        const angleRad = (angle - 90) * (Math.PI / 180);
+        const ratio = destinationData.distance / RADAR_MAX_DISTANCE;
+        return (
+          <G
+            x={RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.cos(angleRad))}
+            y={RADAR_RADIUS + (ratio * RADAR_RADIUS * Math.sin(angleRad))}
           >
-            {location && (
-              <Marker
-                coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-                title="Your Location"
-                pinColor="blue"
-              >
-                <View style={styles.userMarker}>
-                  <View style={styles.userMarkerInner} />
-                </View>
-              </Marker>
-            )}
-            {destination && (
-              <Marker
-                coordinate={{ latitude: destination.latitude, longitude: destination.longitude }}
-                title={destination.name}
-                pinColor="green"
-              >
-                <View style={styles.destinationMarker}>
-                  <Ionicons name="flag" size={20} color="white" />
-                </View>
-              </Marker>
-            )}
-            {nearbyPOIs.map(poi => (
-              <Marker
-                key={poi.id}
-                coordinate={{ latitude: poi.latitude, longitude: poi.longitude }}
-                title={poi.name}
-                description={`${Math.round(poi.distance)}m away`}
-              >
-                <View style={styles.poiMarker}>
-                  <Text style={styles.poiText}>{poi.name.split(' ')[0]}</Text>
-                </View>
-              </Marker>
-            ))}
-          </MapView>
-        </View>
-      </CameraView>
+            <Circle r="6" fill="#00FF00" stroke="#FFF" strokeWidth="1.5" />
+            <SvgText
+              x="0"
+              y="-10"
+              fill="#00FF00"
+              fontSize="10"
+              textAnchor="middle"
+              fontWeight="bold"
+            >
+              {destination.name.split(' ')[0]}
+            </SvgText>
+          </G>
+        );
+      })()
+    )}
+  </Svg>
+);
+
+if (!permission) return null;
+if (!permission.granted) {
+  return (
+    <View style={styles.permissionContainer}>
+      <Text style={styles.permissionText}>Camera permission required for AR navigation</Text>
+      <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+        <Text style={styles.permissionButtonText}>Enable Camera</Text>
+      </TouchableOpacity>
     </View>
   );
+}
+
+return (
+  <View style={styles.container}>
+    <CameraView style={styles.camera} facing={facing}>
+      <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <Ionicons name="arrow-back" size={28} color="white" />
+      </TouchableOpacity>
+      <Animated.View
+        style={[
+          styles.arrowContainer,
+          {
+            transform: [
+              {
+                rotate: rotateAnim.interpolate({
+                  inputRange: [0, 360],
+                  outputRange: ['0deg', '360deg'],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <Svg height="120" width="120">
+          <Path
+            d="M60 10 L110 110 L60 80 L10 110 Z"
+            fill={hasArrived ? '#00FF00' : distance < 50 ? '#FFA500' : '#FF5555'}
+            opacity={0.9}
+            stroke="white"
+            strokeWidth="2"
+          />
+        </Svg>
+      </Animated.View>
+      <View style={styles.distanceContainer}>
+        <Text style={styles.distanceText}>
+          {hasArrived
+            ? `🎉 Arrived at ${destination.name}`
+            : `${Math.round(distance)}m to ${destination.name}`}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={styles.radarToggle}
+        onPress={() => setShowRadar(!showRadar)}
+      >
+        <Ionicons name={showRadar ? 'eye-off' : 'eye'} size={24} color="white" />
+      </TouchableOpacity>
+      {showRadar && (
+        <View style={styles.radarContainer}>
+          {renderRadar()}
+          <Text style={styles.radarText}>Nearby Points of Interest</Text>
+        </View>
+      )}
+      {!hasArrived && (
+        <Svg style={StyleSheet.absoluteFill}>
+          <Path
+            d={`M${CENTER_X} ${SCREEN_HEIGHT} L${CENTER_X} ${CENTER_Y}`}
+            stroke="rgba(255,255,255,0.5)"
+            strokeWidth="2"
+            strokeDasharray="8 5"
+          />
+        </Svg>
+      )}
+      <View style={styles.mapContainer}>
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            latitude: location ? location.latitude : destination.latitude,
+            longitude: location ? location.longitude : destination.longitude,
+            latitudeDelta: 0.002,
+            longitudeDelta: 0.002,
+          }}
+          zoomEnabled={false}
+          scrollEnabled={false}
+          rotateEnabled={false}
+          pitchEnabled={false}
+          loadingEnabled={true}
+          loadingIndicatorColor="#666666"
+          loadingBackgroundColor="#eeeeee"
+        >
+          {location && (
+            <Marker
+              coordinate={{ latitude: location.latitude, longitude: location.longitude }}
+              title="Your Location"
+              pinColor="blue"
+            >
+              <View style={styles.userMarker}>
+                <View style={styles.userMarkerInner} />
+              </View>
+            </Marker>
+          )}
+          {destination && (
+            <Marker
+              coordinate={{ latitude: destination.latitude, longitude: destination.longitude }}
+              title={destination.name}
+              pinColor="green"
+            >
+              <View style={styles.destinationMarker}>
+                <Ionicons name="flag" size={20} color="white" />
+              </View>
+            </Marker>
+          )}
+          {nearbyPOIs.map(poi => (
+            <Marker
+              key={poi.id}
+              coordinate={{ latitude: poi.latitude, longitude: poi.longitude }}
+              title={poi.name}
+              description={`${Math.round(poi.distance)}m away`}
+            >
+              <View style={styles.poiMarker}>
+                <Text style={styles.poiText}>{poi.name.split(' ')[0]}</Text>
+              </View>
+            </Marker>
+          ))}
+        </MapView>
+      </View>
+    </CameraView>
+  </View>
+);
 };
 
 const styles = StyleSheet.create({
