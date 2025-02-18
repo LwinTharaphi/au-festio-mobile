@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { StyleSheet, View, Text, Dimensions, TouchableOpacity, Animated } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
-import * as Sensors from 'expo-sensors';
 import { getGreatCircleBearing, getDistance } from 'geolib';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
@@ -72,17 +71,12 @@ const ARNavigation = ({ destination, onBack }) => {
   const [showRadar, setShowRadar] = useState(true);
   const mockLocationSetRef = useRef(false);
 
-  // Ref for smoothing magnetometer readings
-  const smoothHeading = useRef(0);
-  const alpha = 0.1; // Smoothing factor
-
   // Calculate destination data based on current location
   const destinationData = useMemo(() => ({
     exists: !!destination,
     distance: location ? getDistance(location, destination) : 0,
     bearing: location ? getGreatCircleBearing(location, destination) : 0,
   }), [location, destination]);
-
 
   // Load navigation sound on mount
   useEffect(() => {
@@ -111,16 +105,16 @@ const ARNavigation = ({ destination, onBack }) => {
     setNearbyPOIs(calculatedPOIs);
   }, [destination]);
 
-  // Throttled location update – only update at most every 500ms
+  // Throttled location update – update at most every 500ms
   const throttledHandleLocationUpdate = useCallback(
     throttle((loc) => {
-      // Only update if location has changed significantly
+      // Skip update if location change is insignificant
       if (location && getDistance(location, loc.coords) < 1) return;
       const newDistance = getDistance(loc.coords, destination);
       setLocation(loc.coords);
       setDistance(newDistance);
 
-      // Trigger arrival actions if within threshold
+      // Trigger arrival feedback if within threshold
       if (newDistance <= ARRIVAL_THRESHOLD) {
         if (!hasArrived) {
           setHasArrived(true);
@@ -135,35 +129,30 @@ const ARNavigation = ({ destination, onBack }) => {
     [destination, updateNearbyPOIs, location, hasArrived]
   );
 
-  // Throttled magnetometer update with low-pass filter for smoothing
-  const throttledHandleMagnetometer = useCallback(
-    throttle(({ x, y }) => {
-      // Compute the raw heading from magnetometer data
-      const newHeading = (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
-      // Apply exponential smoothing to reduce noise
-      smoothHeading.current = alpha * newHeading + (1 - alpha) * smoothHeading.current;
-      setHeading(smoothHeading.current);
-    }, 300),
-    []
-  );
-
-  // Subscribe to location and sensor updates
+  // Subscribe to both location and heading updates using Expo Location
   useEffect(() => {
     let locationSub;
-    let magnetometerSub;
+    let headingSub;
     
     (async () => {
+      // Request location permissions
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
       
+      // Subscribe to position updates
       locationSub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.BestForNavigation },
+        { accuracy: Location.Accuracy.BestForNavigation, timeInterval: 500, distanceInterval: 1 },
         throttledHandleLocationUpdate
       );
       
-      magnetometerSub = Sensors.Magnetometer.addListener(throttledHandleMagnetometer);
+      // Subscribe to heading updates from location (works on both iOS and Android)
+      headingSub = await Location.watchHeadingAsync((headingData) => {
+        // Use trueHeading if available; otherwise, fallback to heading
+        const newHeading = headingData.trueHeading != null ? headingData.trueHeading : headingData.heading;
+        setHeading(newHeading);
+      });
 
-      // In development mode, you can set a mock location for testing
+      // For testing in development mode, set a mock location if needed
       if (__DEV__ && destination && !mockLocationSetRef.current) {
         mockLocationSetRef.current = true;
         Location.setMockLocationAsync(destination);
@@ -172,14 +161,16 @@ const ARNavigation = ({ destination, onBack }) => {
 
     return () => {
       locationSub?.remove();
-      magnetometerSub?.remove();
+      headingSub?.remove();
     };
-  }, [destination, throttledHandleLocationUpdate, throttledHandleMagnetometer]);
+  }, [destination, throttledHandleLocationUpdate]);
 
-  // Update radar POIs positions when nearbyPOIs or heading changes
+  // Update radar POIs positions when nearby POIs or heading changes
   useEffect(() => {
     const newRadarPOIs = nearbyPOIs.map(poi => {
+      // Calculate the angle relative to current heading
       const angle = (poi.bearing - heading + 360) % 360;
+      // Adjust by 90° for SVG coordinate system and convert to radians
       const angleRad = (angle - 90) * (Math.PI / 180);
       const ratio = poi.distance / RADAR_MAX_DISTANCE;
       return {
@@ -191,13 +182,16 @@ const ARNavigation = ({ destination, onBack }) => {
     setRadarPOIs(newRadarPOIs);
   }, [nearbyPOIs, heading]);
 
-  // Animate the AR arrow rotation whenever location, heading, or destination changes
+  // Animate the AR arrow rotation when location, heading, or destination changes
   useEffect(() => {
     if (location && heading !== null && destination) {
+      // Get bearing from current location to destination
       const bearing = getGreatCircleBearing(location, destination);
-      const relativeAngle = (bearing - heading + 360) % 360;
+      // Compute a signed relative angle between -180° and 180°
+      const signedRelativeAngle = ((bearing - heading + 540) % 360) - 180;
+      // Animate the arrow rotation using the computed angle
       Animated.spring(rotateAnim, {
-        toValue: -relativeAngle, // Negative value to rotate in the correct direction
+        toValue: signedRelativeAngle,
         useNativeDriver: true,
         friction: 8,
         tension: 60,
@@ -284,9 +278,10 @@ const ARNavigation = ({ destination, onBack }) => {
             {
               transform: [
                 {
+                  // Interpolate rotation to degrees
                   rotate: rotateAnim.interpolate({
-                    inputRange: [0, 360],
-                    outputRange: ['0deg', '360deg'],
+                    inputRange: [-180, 180],
+                    outputRange: ['-180deg', '180deg'],
                   }),
                 },
               ],
@@ -408,7 +403,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   radarText: { color: 'white', fontSize: 15, marginTop: 5, textAlign: 'center' },
-  compass: { position: 'absolute', top: CENTER_Y - 150, left: CENTER_X - 150, opacity: 0.5 },
   arrowContainer: { position: 'absolute', top: CENTER_Y - 50, left: CENTER_X - 50 },
   distanceContainer: {
     position: 'absolute',
@@ -420,10 +414,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   distanceText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  directionText: { color: 'white', fontSize: 14, marginTop: 5 },
-  pathVisualization: { position: 'absolute', width: SCREEN_WIDTH, height: SCREEN_HEIGHT },
-  message: { textAlign: 'center', paddingBottom: 10 },
-  successText: { color: '#00FF00', fontSize: 20, fontWeight: 'bold', marginTop: 10 },
   mapContainer: {
     position: 'absolute',
     bottom: 500,
@@ -476,6 +466,7 @@ const styles = StyleSheet.create({
   permissionButton: { backgroundColor: '#4CAF50', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 5 },
   permissionButtonText: { color: 'white', fontSize: 16 },
   radarToggle: { position: 'absolute', top: 40, right: 20, zIndex: 1 },
+  radar: { position: 'absolute', top: 0, left: 0 },
 });
 
 export default ARNavigation;
