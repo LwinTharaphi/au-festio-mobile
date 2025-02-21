@@ -315,7 +315,6 @@ const ARNavigation = ({ destination, onBack }) => {
         {showRadar && (
           <View style={styles.radarContainer}>
             {renderRadar()}
-            <Text style={styles.radarText}>Nearby Points of Interest</Text>
           </View>
         )}
         {!hasArrived && (
@@ -403,7 +402,6 @@ const styles = StyleSheet.create({
     padding: 5,
     zIndex: 1,
   },
-  radarText: { color: 'white', fontSize: 15, marginTop: 5, textAlign: 'center' },
   arrowContainer: { position: 'absolute', top: CENTER_Y - 50, left: CENTER_X - 50 },
   distanceContainer: {
     position: 'absolute',
@@ -417,7 +415,7 @@ const styles = StyleSheet.create({
   distanceText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
   mapContainer: {
     position: 'absolute',
-    bottom: 500,
+    bottom: 420,
     right: 0,
     width: 198,
     height: 180,
