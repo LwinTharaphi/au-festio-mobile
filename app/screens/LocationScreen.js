@@ -10,22 +10,19 @@ import {
   FlatList,
   ActivityIndicator,
   Keyboard,
-  Platform,
   Alert,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
 import * as Linking from 'expo-linking';
 import Toast from 'react-native-toast-message';
 import ARNavigation from './ARNavigation';
 
 const { width, height } = Dimensions.get('window');
 
-// Predefined markers array for locations
+// Predefined markers array for locations.
 const markers = [
   { id: 1, name: 'CL Building', latitude: 13.611652749054086, longitude: 100.83792247449529 },
   { id: 2, name: 'Vincent Mary School of Engineering, Science and Technology (VMES)', latitude: 13.613098371512264, longitude: 100.8358947560651 },
@@ -60,27 +57,26 @@ const markers = [
   { id: 31, name: 'John Paul II Sports Center', latitude: 13.615554446216818, longitude: 100.83355005376762 },
   { id: 32, name: 'Indoor Tennis Court', latitude: 13.616033063962563, longitude: 100.83394642218752 },
   { id: 33, name: 'Outdoor Parking Lot', latitude: 13.615317913000434, longitude: 100.83485431364852 },
-  { id: 34, name: 'Graduate Studies', latitude: 13.612840208801865, longitude: 100.83623324263411 },
+  {id: 34, name: 'Graduate Studies', latitude: 13.612840208801865, longitude: 100.83623324263411},
+  {id: 35, name: 'AU Fountain', latitude: 13.612954512540377, longitude: 100.8356260006042}
 ];
 
-// Helper function to calculate the distance between two geographic coordinates
+// Helper function to calculate the distance between two geographic coordinates.
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371e3; // Earth's radius in meters
+  const R = 6371e3; // Earth's radius in meters.
   const φ1 = (lat1 * Math.PI) / 180;
   const φ2 = (lat2 * Math.PI) / 180;
   const Δφ = ((lat2 - lat1) * Math.PI) / 180;
   const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-
   const a =
     Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
     Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c; // Returns distance in meters
+  return R * c; // Returns distance in meters.
 };
 
 export default function LocationScreen() {
-  // State variables to manage location, markers, directions, modals, and more.
+  // State variables for location, markers, directions, modals, etc.
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,15 +89,19 @@ export default function LocationScreen() {
   const [showARNavigation, setShowARNavigation] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showSteps, setShowSteps] = useState(false);
-  const [isSharing, setIsSharing] = useState(false);
 
-  // Reference to the MapView to perform actions like animateToRegion
+  // Reference to the MapView.
   const mapRef = useRef(null);
 
-  // Memoized selected marker to pass stable reference to ARNavigation component.
+  // Memoize selected marker for ARNavigation.
   const memoizedSelectedMarker = useMemo(() => selectedMarker, [selectedMarker]);
 
-  // Load favorites from AsyncStorage when component mounts.
+  // Define favoriteMarkers using the favorites state.
+  const favoriteMarkers = markers.filter((marker) =>
+    favorites.includes(marker.id)
+  );
+
+  // Load favorites from AsyncStorage when the component mounts.
   useEffect(() => {
     const loadFavorites = async () => {
       try {
@@ -116,7 +116,7 @@ export default function LocationScreen() {
     loadFavorites();
   }, []);
 
-  // Save favorites to AsyncStorage when favorites array changes.
+  // Save favorites to AsyncStorage when favorites change.
   useEffect(() => {
     const saveFavorites = async () => {
       try {
@@ -128,7 +128,7 @@ export default function LocationScreen() {
     saveFavorites();
   }, [favorites]);
 
-  // Request location permission and get the current position.
+  // Request location permission and get current position.
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -142,26 +142,23 @@ export default function LocationScreen() {
         );
         return;
       }
-
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location.coords);
+      let loc = await Location.getCurrentPositionAsync({});
+      setLocation(loc.coords);
       setIsLoading(false);
     })();
   }, []);
 
-  // Handle deep linking to set marker from external URL.
+  // Handle deep linking.
   useEffect(() => {
     const handleDeepLink = (event) => {
       const { url } = event;
       const parsedUrl = Linking.parse(url);
       const { queryParams } = parsedUrl;
-
       if (queryParams && queryParams.latitude && queryParams.longitude) {
         const sharedLocation = {
           latitude: parseFloat(queryParams.latitude),
           longitude: parseFloat(queryParams.longitude),
         };
-
         setSelectedMarker({
           name: 'Shared Location',
           latitude: sharedLocation.latitude,
@@ -170,43 +167,39 @@ export default function LocationScreen() {
         setShowDetails(true);
       }
     };
-
     Linking.addEventListener('url', handleDeepLink);
-
     return () => {
       Linking.removeEventListener('url', handleDeepLink);
     };
   }, []);
 
-  // Handle search input changes.
+  // Handle search changes.
   const handleSearch = (query) => setSearchQuery(query);
 
-  // Filter markers based on the search query.
+  // Filter markers based on search query.
   const filteredMarkers = markers.filter((marker) =>
     marker.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Set selected marker and show details modal.
+  // When a marker is pressed.
   const handleMarkerPress = (marker) => {
     setSelectedMarker(marker);
     setShowDetails(true);
     Keyboard.dismiss();
   };
 
-  // Fetch directions route using the OSRM API.
+  // Fetch route directions.
   const fetchRoute = async (start, end) => {
     const url = `https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson`;
     try {
       const response = await fetch(url);
       const data = await response.json();
       if (data.routes && data.routes.length > 0) {
-        const coordinates = data.routes[0].geometry.coordinates.map((coord) => ({
+        const coords = data.routes[0].geometry.coordinates.map((coord) => ({
           latitude: coord[1],
           longitude: coord[0],
         }));
-        setDirections(coordinates);
-
-        // Extract navigation steps
+        setDirections(coords);
         const steps = data.routes[0].legs[0].steps.map((step) => step.maneuver.instruction);
         setSteps(steps);
       } else {
@@ -217,29 +210,23 @@ export default function LocationScreen() {
     }
   };
 
-  // Calculate directions between current location and the selected marker.
+  // Calculate directions.
   const calculateDirections = () => {
     if (location && selectedMarker) {
-      const start = {
-        latitude: location.latitude,
-        longitude: location.longitude,
-      };
-      const end = {
-        latitude: selectedMarker.latitude,
-        longitude: selectedMarker.longitude,
-      };
+      const start = { latitude: location.latitude, longitude: location.longitude };
+      const end = { latitude: selectedMarker.latitude, longitude: selectedMarker.longitude };
       fetchRoute(start, end);
     }
   };
 
-  // Clear directions and steps.
+  // Clear directions.
   const clearDirections = () => {
     setDirections([]);
     setSteps([]);
     setShowSteps(false);
   };
 
-  // Toggle marker favorite status.
+  // Toggle favorite status.
   const toggleFavorite = (marker) => {
     if (favorites.includes(marker.id)) {
       setFavorites(favorites.filter((id) => id !== marker.id));
@@ -248,129 +235,30 @@ export default function LocationScreen() {
     }
   };
 
-  // Open AR Navigation screen.
+  // Open AR Navigation.
   const handleARNavigation = () => {
     setShowARNavigation(true);
     setShowDetails(false);
     Keyboard.dismiss();
   };
 
-  // Show the favorites modal.
+  // Show favorites modal.
   const handleShowFavorites = () => {
     setShowFavorites(true);
     Keyboard.dismiss();
   };
 
-  // Close the favorites modal.
+  // Close favorites modal.
   const handleCloseFavorites = () => {
     setShowFavorites(false);
   };
 
-  // Remove all favorite markers.
+  // Remove all favorites.
   const removeAllFavorites = () => {
     setFavorites([]);
   };
 
-  // Share the selected marker's location.
-  const shareLocation = async () => {
-    if (selectedMarker) {
-      Alert.alert(
-        'Share Location',
-        `Do you want to share the location of ${selectedMarker.name}?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Share',
-            onPress: async () => {
-              setIsSharing(true);
-              const { latitude, longitude, name } = selectedMarker;
-
-              // Generate a URL based on the platform
-              const url = Platform.select({
-                ios: `http://maps.apple.com/?q=${latitude},${longitude}`,
-                android: `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`,
-              });
-
-              const locationText = `Check out this location: ${name}\n${url}`;
-
-              try {
-                const fileUri = FileSystem.documentDirectory + 'location.txt';
-                await FileSystem.writeAsStringAsync(fileUri, locationText);
-                await Sharing.shareAsync(fileUri, { dialogTitle: 'Share Location' });
-                Toast.show({
-                  type: 'success',
-                  text1: 'Location shared successfully!',
-                });
-              } catch (error) {
-                Toast.show({
-                  type: 'error',
-                  text1: 'Failed to share location.',
-                });
-              } finally {
-                setIsSharing(false);
-              }
-            },
-          },
-        ]
-      );
-    } else {
-      Toast.show({
-        type: 'error',
-        text1: 'No marker selected.',
-      });
-    }
-  };
-
-  // Share the current location.
-  const shareCurrentLocation = async () => {
-    if (location) {
-      Alert.alert(
-        'Share Current Location',
-        'Do you want to share your current location?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Share',
-            onPress: async () => {
-              const { latitude, longitude } = location;
-
-              const url = Platform.select({
-                ios: `http://maps.apple.com/?q=${latitude},${longitude}`,
-                android: `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`,
-              });
-
-              const locationText = `Check out my current location: ${url}`;
-
-              try {
-                const fileUri = FileSystem.documentDirectory + 'current_location.txt';
-                await FileSystem.writeAsStringAsync(fileUri, locationText);
-                await Sharing.shareAsync(fileUri, { dialogTitle: 'Share Current Location' });
-                Toast.show({
-                  type: 'success',
-                  text1: 'Current location shared successfully!',
-                });
-              } catch (error) {
-                Toast.show({
-                  type: 'error',
-                  text1: 'Failed to share current location.',
-                });
-              }
-            },
-          },
-        ]
-      );
-    } else {
-      Toast.show({
-        type: 'error',
-        text1: 'No current location available.',
-      });
-    }
-  };
-
-  // Get only the favorite markers to display in the favorites modal.
-  const favoriteMarkers = markers.filter((marker) => favorites.includes(marker.id));
-
-  // Display error message if any.
+  // If there's an error, display it.
   if (errorMsg) {
     return (
       <View style={styles.container}>
@@ -379,7 +267,7 @@ export default function LocationScreen() {
     );
   }
 
-  // Show loading indicator while location is being fetched.
+  // Show a loading indicator while location is fetched.
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -388,7 +276,7 @@ export default function LocationScreen() {
     );
   }
 
-  // If AR Navigation is active, render the ARNavigation component.
+  // Render AR Navigation if active.
   if (showARNavigation && selectedMarker) {
     return (
       <ARNavigation
@@ -400,7 +288,7 @@ export default function LocationScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Search Bar at the top */}
+      {/* Search Bar */}
       <View style={styles.searchBar}>
         <TextInput
           style={[styles.searchInput, { color: 'black' }]}
@@ -417,15 +305,12 @@ export default function LocationScreen() {
         <Ionicons name="search" size={20} color="black" />
       </View>
 
-      {/* Grouped Button Container for "View Favorites", "My Location", and "Share Current Location" */}
+      {/* Grouped Button Container (Favorites and My Location only) */}
       <View style={styles.buttonGroup}>
-        {/* View Favorites Button */}
         <TouchableOpacity style={styles.groupButton} onPress={handleShowFavorites}>
           <Ionicons name="heart" size={24} color="red" />
           <Text style={styles.groupButtonText}>View Favorites</Text>
         </TouchableOpacity>
-  
-        {/* My Location Button */}
         <TouchableOpacity
           style={styles.groupButton}
           onPress={() => {
@@ -442,15 +327,9 @@ export default function LocationScreen() {
           <Ionicons name="locate" size={24} color="blue" />
           <Text style={styles.groupButtonText}>My Location</Text>
         </TouchableOpacity>
-  
-        {/* Share Current Location Button */}
-        <TouchableOpacity style={styles.groupButton} onPress={shareCurrentLocation}>
-          <Ionicons name="share-social" size={24} color="green" />
-          <Text style={styles.groupButtonText}>Share Current Location</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* Map Component */}
+      {/* Map */}
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -540,20 +419,6 @@ export default function LocationScreen() {
                 {favorites.includes(selectedMarker?.id) ? 'Remove Favorite' : 'Add to Favorites'}
               </Text>
             </TouchableOpacity>
-            {/* Share Location Button */}
-            <TouchableOpacity
-              style={styles.shareButton}
-              onPress={shareLocation}
-            >
-              {isSharing ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <>
-                  <Ionicons name="share-social" size={20} color="white" />
-                  <Text style={styles.shareButtonText}>Share Location</Text>
-                </>
-              )}
-            </TouchableOpacity>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowDetails(false)}
@@ -604,7 +469,7 @@ export default function LocationScreen() {
   );
 }
 
-// Updated styles including the new grouped button container and button styles.
+// Styles.
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -635,10 +500,9 @@ const styles = StyleSheet.create({
   clearIcon: {
     marginRight: 10,
   },
-  // New button group container styling
   buttonGroup: {
     position: 'absolute',
-    top: 100, // Adjust this value as needed
+    top: 100,
     left: 20,
     right: 20,
     flexDirection: 'row',
@@ -654,7 +518,6 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 1,
   },
-  // Each button inside the group
   groupButton: {
     flex: 1,
     alignItems: 'center',
@@ -730,20 +593,6 @@ const styles = StyleSheet.create({
   favoriteButtonText: {
     color: 'white',
     fontWeight: 'bold',
-  },
-  shareButton: {
-    backgroundColor: 'purple',
-    padding: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  shareButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    marginLeft: 10,
   },
   closeButton: {
     backgroundColor: 'red',
