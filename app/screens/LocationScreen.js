@@ -57,7 +57,7 @@ const markers = [
   { id: 31, name: 'John Paul II Sports Center', latitude: 13.615554446216818, longitude: 100.83355005376762 },
   { id: 32, name: 'Indoor Tennis Court', latitude: 13.616033063962563, longitude: 100.83394642218752 },
   { id: 33, name: 'Outdoor Parking Lot', latitude: 13.615317913000434, longitude: 100.83485431364852 },
-  {id: 34, name: 'Graduate Studies', latitude: 13.612840208801865, longitude: 100.83623324263411},
+  {id: 34, name: 'Graduate Studies', latitude: 13.612866816197686, longitude: 100.8362314077877},
   {id: 35, name: 'AU Fountain', latitude: 13.612954512540377, longitude: 100.8356260006042}
 ];
 
