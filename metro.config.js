@@ -9,5 +9,12 @@ const config = getDefaultConfig(__dirname, { isCSSEnabled: true });
 config.resolver.assetExts = config.resolver.assetExts.filter(ext => ext !== 'cjs'); // Exclude `.cjs` from assets
 config.resolver.sourceExts.push('cjs'); // Add `.cjs` as a source extension
 
+
+// // Add babelTransformerPath
+// config.transformer = {
+//     ...config.transformer,
+//     babelTransformerPath: require.resolve('react-native-css-transformer'),
+//   };
+
 // Ensure compatibility with NativeWind and global CSS
 module.exports = withNativeWind(config, { input: "./global.css" });

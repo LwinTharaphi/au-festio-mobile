@@ -6,17 +6,17 @@
     "owner": "aeliawin",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/au_festio_logo.jpg",
+    "icon": "./assets/images/logo.png",
     "scheme": "au-festio-mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/au_festio_logo.jpg",
+      "image": "./assets/images/au_festio_logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "notification": {
-      "icon": "./assets/images/au_festio_logo.jpg",
+      "icon": "./assets/images/logo.png",
       "color": "#ffffff"
     },
     "ios": {
@@ -40,7 +40,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.reactnativejs.au.festio.mobile",
+      "package": "com.reactnativejs.au_festio_mobile",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "CAMERA",
@@ -102,15 +102,7 @@
       "@reactvision/react-viro",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "@react-native-firebase/crashlytics",
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
-        }
-      ]
+      "@react-native-firebase/crashlytics"
     ],
     "extra": {
       "router": {
