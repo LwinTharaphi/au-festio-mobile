@@ -90,7 +90,7 @@ export default function NotificationScreen() {
       ) : (
         <FlatList
           data={notifications}
-          keyExtractor={(item) => `${item.data.eventId}-${item.data.type}`} // Use eventId as a unique identifier
+          keyExtractor={(item) => `${item.data.eventId}-${item.data.type}-${item.timestamp}`} // Use eventId as a unique identifier
           renderItem={({ item }) => (
             <TouchableOpacity onPress={()=> handleNotificationPress(item)} style={styles.notificationItem}>
               <View style={styles.textContainer}>

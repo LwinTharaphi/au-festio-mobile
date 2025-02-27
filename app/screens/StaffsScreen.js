@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { Picker } from '@react-native-picker/picker';
+import RNPickerSelect from 'react-native-picker-select';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   Animated,
 } from 'react-native';
 import { auth } from '../config/firebase'
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export default function StaffRolesScreen({ route }) {
   const navigation = useNavigation();
@@ -38,7 +39,17 @@ export default function StaffRolesScreen({ route }) {
   const [staffId, setStaffId] = useState(null);
   const [status, setStatus] = useState(null);
   const [registrationDate, setRegistrationDate] = useState(null);
-  const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
+  const faculties = [
+    { label: 'VMES', value: 'VMES' },
+    { label: 'MSME', value: 'MSME' },
+    { label: 'Arts', value: 'Arts' },
+    { label: 'Music', value: 'Music' },
+    { label: 'Biotechnology', value: 'Biotechnology' },
+    { label: 'Law', value: 'Law' },
+    { label: 'Communication Arts', value: 'Communication Arts' },
+    { label: 'Architecture and Design', value: 'Architecture and Design' },
+    { label: 'Nursing Science', value: 'Nursing Science' },
+  ];
 
   const user = auth.currentUser;
 
@@ -403,19 +414,38 @@ export default function StaffRolesScreen({ route }) {
                     onChangeText={(text) => setFormData({ ...formData, phone: text })}
                   />
                   <View style={[styles.pickerContainer, { height: 43 }]}>
-                    <Picker
-                      selectedValue={formData.faculty}
-                      style={[
-                        styles.picker,
-                        { color: formData.faculty === '' ? '#aaa' : '#000' }, // Conditional text color
-                      ]}
+
+                    <RNPickerSelect
                       onValueChange={(value) => setFormData({ ...formData, faculty: value })}
-                    >
-                      <Picker.Item label="Select Faculty" value="" />
-                      {faculties.map((faculty) => (
-                        <Picker.Item key={faculty} label={faculty} value={faculty} />
-                      ))}
-                    </Picker>
+                      items={faculties}
+                      placeholder={{ label: 'Select Faculty', value: '' }}
+                      style={{
+                        inputIOS: {
+                          ...styles.picker,
+                          color: formData.faculty ? "#000" : "#AAA",
+                        },
+                        inputAndroid: {
+                          ...styles.picker,
+                          color: formData.faculty ? "#000" : "#AAA",
+                        },
+                        placeholder: {
+                          color: "#AAA", // Same logic for Android
+                        },
+                        viewContainer: {
+                          borderWidth: 1,
+                          borderColor: '#ccc',
+                          borderRadius: 5,
+                          justifyContent: 'center',
+                        },
+                        iconContainer: {
+                          top: '50%', // Vertically center the icon
+                          transform: [{ translateY: -12 }], // Adjust based on icon size
+                        },
+                      }}
+                      value={formData.faculty}
+                      useNativeAndroidPickerStyle={false}
+                      Icon={() => <Icon name="arrow-drop-down" size={24} color="#AAA" />}
+                    />
                   </View>
                   <Text style={styles.policyText}>Note: You can only cancel your registration within three days. </Text>
                   <View style={styles.buttonContainer}>
@@ -539,6 +569,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center', // Center the picker vertically
     overflow: 'hidden', // Clip anything exceeding the container bounds
     marginBottom: 10,
+  },
+  picker: {
+    width: '100%',
+    color: '#AAA',
+    paddingHorizontal: 10,
+    paddingVertical: 12,
   },
   buttonContainer: {
     flexDirection: 'row',
