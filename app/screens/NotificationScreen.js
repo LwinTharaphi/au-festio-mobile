@@ -82,7 +82,7 @@ export default function NotificationScreen() {
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Notification History</Text>
         <TouchableOpacity onPress={confirmDeleteAll} style={styles.deleteAllButton}>
-          <Icon name="delete-sweep" size={24} color="#ff5252" />
+          {/* <Icon name="delete-sweep" size={24} color="#ff5252" /> */}
         </TouchableOpacity>
       </View>
       {notifications.length === 0 ? (
@@ -97,9 +97,9 @@ export default function NotificationScreen() {
                 <Text style={styles.title}>{item.title}</Text>
                 <Text style={styles.body}>{item.body}</Text>
               </View>
-              <TouchableOpacity onPress={() => confirmDelete(`${item.data.eventId}-${item.data.type}`)} style={styles.deleteButton}>
+              {/* <TouchableOpacity onPress={() => confirmDelete(`${item.data.eventId}-${item.data.type}`)} style={styles.deleteButton}>
                 <Text style={styles.deleteText}>:</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </TouchableOpacity>
           )}
         />

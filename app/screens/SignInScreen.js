@@ -206,14 +206,14 @@ export default function SignInScreen() {
 
 
               {/* Divider */}
-              <View className="flex-row items-center my-2 mt-1 mb-5">
+              {/* <View className="flex-row items-center my-2 mt-1 mb-5">
                 <View className="flex-1 h-px bg-gray-300" />
                 <Text className="text-center mx-2">Or</Text>
                 <View className="flex-1 h-px bg-gray-300" />
-              </View>
+              </View> */}
 
               {/* Sign In with Google */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 className="py-3 rounded-lg"
                 style={{ backgroundColor: colors.button }}
               
@@ -221,7 +221,7 @@ export default function SignInScreen() {
                 <Text className="text-center text-lg font-bold text-white">
                   Sign In with Google
                 </Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* Sign Up Link */}
               <View className="flex-row justify-center mt-4">
