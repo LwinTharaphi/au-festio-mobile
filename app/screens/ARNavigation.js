@@ -29,7 +29,7 @@ const markers = [
   { id: 6, name: 'Montfort del Rosario School of Architecture and Design (AR)', latitude: 13.611969897717735, longitude: 100.83554611219331},
   { id: 7, name: 'Albert Laurence School of Communication Arts (CA)', latitude: 13.612205194998582, longitude: 100.83522757952385 },
   { id: 8, name: 'Martin de Tours School of Management and Economics (MSME)', latitude: 13.612698533211569, longitude: 100.83664996645814 },
-  { id: 9, name: 'Saint Luke School of Medicine', latitude: 13.613185049535668, longitude: 100.83540288026663 },
+  { id: 9, name: 'Saint Luke School of Medicine', latitude: 13.61322163108002, longitude: 100.83549263423588 },
   { id: 10, name: 'SR Building', latitude: 13.611228622968122, longitude: 100.83754561433472 },
   { id: 11, name: 'Communication Arts Studio', latitude: 13.61220045130831, longitude: 100.8348333233367 },
   { id: 12, name: 'Saint Michael Hall', latitude: 13.612329998778712, longitude: 100.83692355988839 },
@@ -54,8 +54,8 @@ const markers = [
   { id: 31, name: 'John Paul II Sports Center', latitude: 13.615554446216818, longitude: 100.83355005376762 },
   { id: 32, name: 'Indoor Tennis Court', latitude: 13.616033063962563, longitude: 100.83394642218752 },
   { id: 33, name: 'Outdoor Parking Lot', latitude: 13.615317913000434, longitude: 100.83485431364852 },
-  {id: 34, name: 'Graduate Studies', latitude: 13.612866816197686, longitude: 100.8362314077877},
-  {id: 35, name: 'AU Fountain', latitude: 13.612954512540377, longitude: 100.8356260006042}
+  {id: 34, name: 'Graduate Studies', latitude: 13.613037513820242, longitude: 100.83624555959206},
+  {id: 35, name: 'AU Fountain', latitude: 13.612948580254617, longitude: 100.83562631510614}
 ];
 
 const ARNavigation = ({ destination, onBack }) => {
