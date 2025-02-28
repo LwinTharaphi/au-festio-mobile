@@ -13,7 +13,7 @@ import throttle from 'lodash.throttle';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CENTER_X = SCREEN_WIDTH / 2;
 const CENTER_Y = SCREEN_HEIGHT / 2;
-const ARRIVAL_THRESHOLD = 15;
+const ARRIVAL_THRESHOLD = 10; // Decreased arrival threshold from 15 to 10 meters for more consistent AR navigation
 const RADAR_SIZE = 180;
 const RADAR_RADIUS = RADAR_SIZE / 2;
 const RADAR_MAX_DISTANCE = 200;
@@ -26,7 +26,7 @@ const markers = [
   { id: 3, name: 'Sala Chaturamuk Phaichit', latitude: 13.611730645797293, longitude: 100.83879029400991 },
   { id: 4, name: 'IT Building : Srisakdi Charmonman Building', latitude: 13.61181961688499, longitude: 100.83633391284009 },
   { id: 5, name: 'ABAC Car Park Building', latitude: 13.61184223622187, longitude: 100.83608464745402 },
-  { id: 6, name: 'Montfort del Rosario School of Architecture and Design (AR)', latitude: 13.611969897717735, longitude: 100.83554611219331},
+  { id: 6, name: 'Montfort del Rosario School of Architecture and Design (AR)', latitude: 13.611969897717735, longitude: 100.83554611219331 },
   { id: 7, name: 'Albert Laurence School of Communication Arts (CA)', latitude: 13.612205194998582, longitude: 100.83522757952385 },
   { id: 8, name: 'Martin de Tours School of Management and Economics (MSME)', latitude: 13.612698533211569, longitude: 100.83664996645814 },
   { id: 9, name: 'Saint Luke School of Medicine', latitude: 13.61322163108002, longitude: 100.83549263423588 },
@@ -54,8 +54,8 @@ const markers = [
   { id: 31, name: 'John Paul II Sports Center', latitude: 13.615554446216818, longitude: 100.83355005376762 },
   { id: 32, name: 'Indoor Tennis Court', latitude: 13.616033063962563, longitude: 100.83394642218752 },
   { id: 33, name: 'Outdoor Parking Lot', latitude: 13.615317913000434, longitude: 100.83485431364852 },
-  {id: 34, name: 'Graduate Studies', latitude: 13.613037513820242, longitude: 100.83624555959206},
-  {id: 35, name: 'AU Fountain', latitude: 13.612948580254617, longitude: 100.83562631510614}
+  { id: 34, name: 'Graduate Studies', latitude: 13.613037513820242, longitude: 100.83624555959206 },
+  { id: 35, name: 'AU Fountain', latitude: 13.612948580254617, longitude: 100.83562631510614 }
 ];
 
 const ARNavigation = ({ destination, onBack }) => {
@@ -183,8 +183,11 @@ const ARNavigation = ({ destination, onBack }) => {
     setRadarPOIs(newRadarPOIs);
   }, [nearbyPOIs, heading]);
 
-  // Animate the AR arrow rotation when location, heading, or destination changes
+  // Animate the AR arrow rotation when location, heading, or destination changes.
+  // If the destination has been reached, freeze the arrow rotation.
   useEffect(() => {
+    if (hasArrived) return; // Do not update rotation once arrived
+
     if (location && heading !== null && destination) {
       // Get bearing from current location to destination
       const bearing = getGreatCircleBearing(location, destination);
@@ -198,7 +201,7 @@ const ARNavigation = ({ destination, onBack }) => {
         tension: 60,
       }).start();
     }
-  }, [location, heading, destination, rotateAnim]);
+  }, [location, heading, destination, hasArrived, rotateAnim]);
 
   if (!permission) return null;
   if (!permission.granted) {
