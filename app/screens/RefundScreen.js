@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, Image, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
@@ -7,11 +7,31 @@ import { uploadFile, deleteImage } from '../services/aws';
 import { AWS_BUCKET_NAME, AWS_REGION } from '@env';
 
 const RefundScreen = ({ route }) => {
-  const { refundPercentage, studentId, organizerId, eventId } = route.params;
+  const { studentId, organizerId, eventId, notification } = route.params;
   const navigation = useNavigation();
 
   const [qrImage, setQrImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [refundStatus, setRefundStatus] = useState('none');
+  const [refundPercentage, setRefundPercentage] = useState(route.params.refundPercentage || 0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const eventResponse = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}`);
+        const event = await eventResponse.json();
+        setRefundStatus(event.refundStatus);
+        console.log('Event:', event);
+      }
+      catch (error) {
+        console.error('Error fetching event:', error);
+      }
+    };
+    fetchData();
+    if (refundStatus === 'refund_in_progress') {
+      setRefundPercentage(100);
+    }
+  }, [organizerId, eventId]);
 
   // Function to pick an image
   const pickImage = async () => {
@@ -51,6 +71,8 @@ const handleSubmit = async () => {
   setIsSubmitting(true);
 
   try {
+    console.log("Student id", studentId)
+    console.log("refund percentage", refundPercentage)
     let imageUrl = null;
     if (qrImage) {
       console.log('Uploading image:', qrImage);
@@ -120,7 +142,11 @@ const handleSubmit = async () => {
 
 return (
   <View style={styles.container}>
-    <Text style={styles.text}>You are eligible for a {refundPercentage}% refund.</Text>
+    {refundStatus === 'refund_in_progress' ? (
+        <Text style={styles.text}>You are eligible for a full refund.</Text>
+    ) : (
+        <Text style={styles.text}>You are eligible for a {refundPercentage}% refund.</Text>
+    )}
     <View style={styles.uploadContainer}>
       {/* Upload icon */}
       <TouchableOpacity onPress={pickImage} style={styles.uploadButton}>

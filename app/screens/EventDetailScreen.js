@@ -65,6 +65,7 @@ export default function EventDetailScreen({ route }) {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
+  const [amount, setAmount] = useState(null);
   // const faculties = ['VMES', 'MSME', 'Arts', 'Music', 'Biotechnology', 'Law', 'Communication Arts', 'Architecture and Design', 'Nursing Science'];
   const faculties = [
     { label: 'VMES', value: 'VMES' },
@@ -98,7 +99,9 @@ export default function EventDetailScreen({ route }) {
         const response = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/qr`);
         const data = await response.json();
         setPaymentQR(`${data.qrSvg}`);
+        setAmount(data.amount);
         console.log("Payment QR code data:", data.qrSvg);
+        console.log("Amount:", data.amount);
       } catch (error) {
         console.error("Error fetching QR code:", error);
       }
@@ -359,7 +362,7 @@ export default function EventDetailScreen({ route }) {
           text: "OK",
           onPress: async () => { // Make this function async
             const firebaseUID = user?.uid;
-            const payload = { ...formData, eventId, firebaseUID, expoPushToken };
+            const payload = { ...formData, eventId, firebaseUID, expoPushToken,amount };
             // console.log('Registration data:', payload );
             console.log('Registration Payload:', payload);
 

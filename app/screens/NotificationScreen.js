@@ -3,6 +3,7 @@ import { View, FlatList, Text, StyleSheet, TouchableOpacity, Alert } from 'react
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
+import { or } from 'firebase/firestore';
 
 export default function NotificationScreen() {
   const [notifications, setNotifications] = useState([]);
@@ -74,6 +75,8 @@ export default function NotificationScreen() {
     const { eventId, type } = notification.data;
     if (type === 'feedback-reminder' || type === 'registration-confirmation') {
       navigation.navigate('NotificationDetail', { eventId, type, notification });
+    } else if (type === 'event_refund') {
+      navigation.navigate('Refund', { eventId, type, notification, organizerId: notification.data.organizerId, studentId: notification.data.studentId });
     }
   }
 
