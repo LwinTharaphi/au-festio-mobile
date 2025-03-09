@@ -22,15 +22,15 @@ const RefundScreen = ({ route }) => {
         const event = await eventResponse.json();
         setRefundStatus(event.refundStatus);
         console.log('Event:', event);
+        if (refundStatus === 'refund_in_progress') {
+          setRefundPercentage(100);
+        }
       }
       catch (error) {
         console.error('Error fetching event:', error);
       }
     };
     fetchData();
-    if (refundStatus === 'refund_in_progress') {
-      setRefundPercentage(100);
-    }
   }, [organizerId, eventId]);
 
   // Function to pick an image
