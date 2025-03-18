@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { auth } from '../config/firebase'
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function StaffRolesScreen({ route }) {
   const navigation = useNavigation();
@@ -176,6 +177,22 @@ export default function StaffRolesScreen({ route }) {
     ]).start();
   };
 
+  useEffect(() => {
+    const firebaseUID = user?.uid;
+    const getData = async () => {
+      try {
+        const storedFormData = await AsyncStorage.getItem(`formData_${firebaseUID}`);
+        if (storedFormData) {
+          setFormData(JSON.parse(storedFormData));
+        }
+      } catch (error) {
+        console.error('Error retrieving data from AsyncStorage:', error);
+      }
+    };
+
+    getData();
+  }, []);
+
   const handleConfirm = () => {
     console.log("Event Data", event);
     console.log("Staff Roles", staffRoles);
@@ -197,8 +214,9 @@ export default function StaffRolesScreen({ route }) {
         },
         {
           text: "OK",
-          onPress: () => {
+          onPress: async () => {
             const firebaseUID = user?.uid;
+            await AsyncStorage.setItem(`formData_${firebaseUID}`, JSON.stringify(formData));
             const payload = { ...formData, role: formData.role, event, firebaseUID, expoPushToken };
             console.log("Payload", payload);
             fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/staffs`, {
@@ -229,7 +247,7 @@ export default function StaffRolesScreen({ route }) {
                 setModalVisible(false);
                 setRegisteredRole(formData.role);
                 setStaffId(data._id);
-                setFormData({ id: '', name: '', email: '', faculty: '', phone: '', role: '' });
+                setFormData({ sid: '', name: '', email: '', faculty: '', phone: '', role: '' });
               })
               .catch((error) => {
                 console.error('Error registering:', error);
@@ -390,8 +408,8 @@ export default function StaffRolesScreen({ route }) {
                   <TextInput
                     style={styles.input}
                     placeholder="ID"
-                    value={formData.id}
-                    onChangeText={(text) => setFormData({ ...formData, id: text })}
+                    value={formData.sid}
+                    onChangeText={(text) => setFormData({ ...formData, sid: text })}
                   />
                   <TextInput
                     style={styles.input}

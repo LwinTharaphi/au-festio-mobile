@@ -7,6 +7,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import CustomToast from '../components/CustomToast';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -175,6 +176,22 @@ export default function EventDetailScreen({ route }) {
     };
     fetchCheckInQR();
   }, [studentId, user.uid]);
+
+  useEffect(() => {
+    const firebaseUID = user?.uid;
+    const getData = async () => {
+      try {
+        const storedFormData = await AsyncStorage.getItem(`formData_${firebaseUID}`);
+        if (storedFormData) {
+          setFormData(JSON.parse(storedFormData));
+        }
+      } catch (error) {
+        console.error('Error retrieving data from AsyncStorage:', error);
+      }
+    };
+
+    getData();
+  }, []);
 
   const saveImageToGallery = async () => {
     const { status } = await MediaLibrary.requestPermissionsAsync();
@@ -362,6 +379,7 @@ export default function EventDetailScreen({ route }) {
           text: "OK",
           onPress: async () => { // Make this function async
             const firebaseUID = user?.uid;
+            await AsyncStorage.setItem(`formData_${firebaseUID}`, JSON.stringify(formData));
             const payload = { ...formData, eventId, firebaseUID, expoPushToken,amount };
             // console.log('Registration data:', payload );
             console.log('Registration Payload:', payload);
