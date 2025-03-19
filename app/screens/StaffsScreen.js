@@ -338,7 +338,7 @@ export default function StaffRolesScreen({ route }) {
     const currentDate = new Date();
     const timeDiff = Math.abs(currentDate - registrationDate);
     const daysSinceRegistration = timeDiff / (1000 * 60 * 60 * 24);
-    const canCancel = daysSinceRegistration <= 1;
+    const canCancel = daysSinceRegistration <= 3;
 
     return (
       <View style={styles.card}>
