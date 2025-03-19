@@ -732,7 +732,7 @@ export default function EventDetailScreen({ route }) {
 
           <Text style={styles.detail}>
             <Icon name="wallet" size={20} color="#555" />
-            {event.isPaid ? `Fees: ${event.price || 'N/A'} TBH` : 'It is a free event'}
+            {event.isPaid ? `Fees: ${event.price || 'N/A'} THB` : 'It is a free event'}
           </Text>
 
           {event.isPaid && event.discount ? (

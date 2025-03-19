@@ -71,10 +71,21 @@ export default function StaffRolesScreen({ route }) {
         // Check if the current user's ID matches any firebaseUID in staffData
         const currentUserStaff = staffsData.find(staff => staff.firebaseUID === user?.uid);
 
+        // const roleCounts = staffsData.reduce((counts, staff) => {
+        //   counts[staff.role.name] = (counts[staff.role.name] || 0) + 1;
+        //   return counts;
+        // }, {});
         const roleCounts = staffsData.reduce((counts, staff) => {
-          counts[staff.role.name] = (counts[staff.role.name] || 0) + 1;
+          const roleName = staff.role.name;
+          
+          // Only increase count if status is NOT "rejected"
+          if (staff.status !== "rejected") {
+            counts[roleName] = (counts[roleName] || 0) + 1;
+          }
+        
           return counts;
         }, {});
+        
 
         const updatedStaffRolesData = staffRolesData.map(role => ({
           ...role,
@@ -315,8 +326,11 @@ export default function StaffRolesScreen({ route }) {
       if (status === "not viewed") {
         buttonText = "Pending";
       } else if (status === "approved") {
-        buttonText = "Registered";
-      } else {
+        buttonText = "Approved";
+      } else if (status === "rejected") {
+        buttonText = "Rejected";
+      }
+       else {
         buttonText = "Cancel";
       }
     }
@@ -342,12 +356,12 @@ export default function StaffRolesScreen({ route }) {
               ? handleCancelRegistration()
               : isSpotsAvailable && handleRegister(item._id)
           }
-          disabled={buttonText === "Registered" || buttonText === "Pending" || (buttonText === "Register" && !isSpotsAvailable)}
+          disabled={buttonText === "Approved" || buttonText === "Pending" || buttonText === "Rejected" || (buttonText === "Register" && !isSpotsAvailable)}
         >
           <Text style={styles.registerButtonText}>{buttonText}</Text>
         </TouchableOpacity>
 
-        {registeredRole === item._id && buttonText !== "Register" && canCancel && (
+        {registeredRole === item._id && buttonText !== "Register" && buttonText !== "Rejected" && canCancel && (
           <TouchableOpacity onPress={handleCancelRegistration}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
