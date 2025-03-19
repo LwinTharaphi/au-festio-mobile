@@ -115,7 +115,7 @@ export default function StaffRolesScreen({ route }) {
     setFormData((prevState) => ({ ...prevState, role }));
     setModalVisible(true);
   };
-  const requiredFields = ["id", "name", "email", "faculty", "phone"];
+  const requiredFields = ["sid", "name", "email", "faculty", "phone"];
   const missingFields = requiredFields.filter((field) => !formData[field]);
 
   const shakeForm = () => {
