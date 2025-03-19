@@ -14,13 +14,17 @@ const RefundScreen = ({ route }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refundStatus, setRefundStatus] = useState('none');
   const [refundPercentage, setRefundPercentage] = useState(route.params.refundPercentage || 0);
+  const [studentRefundStatus, setStudentRefundStatus] = useState('none');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const eventResponse = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}`);
+        const studentResponse = await fetch(`https://au-festio.vercel.app/api/organizers/${organizerId}/events/${eventId}/students/${studentId}`);
         const event = await eventResponse.json();
+        const student = await studentResponse.json();
         setRefundStatus(event.refundStatus);
+        setStudentRefundStatus(student.refundStatus);
         console.log('Event:', event);
         if (refundStatus === 'refund_in_progress') {
           setRefundPercentage(100);
@@ -142,40 +146,48 @@ const handleSubmit = async () => {
 
 return (
   <View style={styles.container}>
-    {refundStatus === 'refund_in_progress' ? (
-        <Text style={styles.text}>You are eligible for a full refund.</Text>
+    {studentRefundStatus === 'requested' ? (
+      <Text style={styles.text}>Your refund request is pending approval.</Text>
+    ) : studentRefundStatus === 'refunded' ? (
+      <Text style={styles.text}>Your refund request has been refunded.</Text>
     ) : (
-        <Text style={styles.text}>You are eligible for a {refundPercentage}% refund.</Text>
-    )}
-    <View style={styles.uploadContainer}>
-      {/* Upload icon */}
-      <TouchableOpacity onPress={pickImage} style={styles.uploadButton}>
-        <Icon name="cloud-upload" size={40} color="#4CAF50" />
-        <Text style={styles.uploadText}>Upload QR Code</Text>
-      </TouchableOpacity>
-
-      {qrImage ? (
-          <View>
-            <Image source={{ uri: qrImage.uri }} style={styles.imagePreview} />
-            {/* Remove Image button */}
-            <TouchableOpacity onPress={removeImage} style={styles.removeButton}>
-              <Text style={styles.removeButtonText}>Remove Image</Text>
-            </TouchableOpacity>
-          </View>
+      <>
+        {refundStatus === 'refund_in_progress' ? (
+          <Text style={styles.text}>You are eligible for a full refund.</Text>
         ) : (
-          <Text style={styles.errorText}>No image uploaded</Text>
+            <Text style={styles.text}>You are eligible for a {refundPercentage}% refund.</Text>
         )}
-    </View>
+        <View style={styles.uploadContainer}>
+          {/* Upload icon */}
+          <TouchableOpacity onPress={pickImage} style={styles.uploadButton}>
+            <Icon name="cloud-upload" size={40} color="#4CAF50" />
+            <Text style={styles.uploadText}>Upload QR Code</Text>
+          </TouchableOpacity>
 
-    <TouchableOpacity
-      style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-      onPress={handleSubmit}
-      disabled={isSubmitting}
-    >
-      <Text style={styles.submitButtonText}>
-        {isSubmitting ? 'Submitting...' : 'Submit'}
-      </Text>
-    </TouchableOpacity>
+          {qrImage ? (
+              <View>
+                <Image source={{ uri: qrImage.uri }} style={styles.imagePreview} />
+                {/* Remove Image button */}
+                <TouchableOpacity onPress={removeImage} style={styles.removeButton}>
+                  <Text style={styles.removeButtonText}>Remove Image</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={styles.errorText}>No image uploaded</Text>
+            )}
+        </View>
+
+        <TouchableOpacity
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+        >
+          <Text style={styles.submitButtonText}>
+            {isSubmitting ? 'Submitting...' : 'Submit'}
+          </Text>
+        </TouchableOpacity>
+      </>
+    )}
   </View>
 );
 };

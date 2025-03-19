@@ -3,6 +3,7 @@ import { Text, View, TextInput, Button, Alert } from 'react-native';
 import { AirbnbRating } from 'react-native-ratings';
 import { auth } from '../config/firebase'
 import QRCode from 'react-native-qrcode-svg';
+import { useNavigation } from '@react-navigation/native';
 
 export default function NotificationDetailScreen({ route }) {
 
@@ -13,6 +14,7 @@ export default function NotificationDetailScreen({ route }) {
     const [rating, setRating] = useState(0);
     const [qrData, setQrData] = useState(null);
     const user = auth.currentUser;
+    const navigation = useNavigation();
 
     useEffect(() => {
         const fetchExistingReview = async () => {
@@ -68,7 +70,9 @@ export default function NotificationDetailScreen({ route }) {
         
                     const data = await response.json();
                     console.log('Feedback submitted:', data);
-                    Alert.alert('Success', 'Your feedback has been submitted successfully.');
+                    Alert.alert('Success', 'Your feedback has been submitted successfully.',[
+                        { text: 'OK', onPress: () => navigation.goBack() },
+                    ]);
                 } catch (error) {
                     console.error('Error submitting feedback:', error);
                     Alert.alert('Error', 'An error occurred while submitting your feedback. Please try again.');
