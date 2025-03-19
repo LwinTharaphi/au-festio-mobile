@@ -105,7 +105,7 @@ export default function EventsScreen({ navigation, route }) {
 
   const saveNotificationToStorage = async (notification) => {
     try{
-      const storedNotifications = JSON.parse(await AsyncStorage.getItem('notifications')) || [];
+      const storedNotifications = JSON.parse(await AsyncStorage.getItem(`notifications_${firebaseUserId}`)) || [];
 
       const normalizedNotification = {
         title: notification.title,
@@ -131,7 +131,7 @@ export default function EventsScreen({ navigation, route }) {
       if (!isDuplicate) {
         const updatedNotifications = [normalizedNotification, ...storedNotifications];
         // console.log('Updated notifications:', updatedNotifications);
-        await AsyncStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+        await AsyncStorage.setItem(`notifications_${firebaseUserId}`, JSON.stringify(updatedNotifications));
       }
     } catch (error) {
       console.error('Failed to save notification:', error);
@@ -147,7 +147,7 @@ export default function EventsScreen({ navigation, route }) {
     // console.log('Current date:', currentDate);
     // console.log('Current time:', currentHours, currentMinutes);
 
-    const notifications = JSON.parse(await AsyncStorage.getItem('notifications')) || [];
+    const notifications = JSON.parse(await AsyncStorage.getItem(`notifications_${firebaseUserId}`)) || [];
     for (const event of events) {
       if (event.isRegistered) {
         // console.log('Event:', event.eventName, event.eventDate, event.endTime, event.organizerId);

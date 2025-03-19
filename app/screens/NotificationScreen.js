@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { or } from 'firebase/firestore';
+import { auth } from '../config/firebase';
 
 export default function NotificationScreen() {
   const [notifications, setNotifications] = useState([]);
@@ -14,8 +15,9 @@ export default function NotificationScreen() {
   }, []);
 
   const loadNotifications = async () => {
+    const firebaseUser = auth.currentUser;
     try {
-      const storedNotifications = JSON.parse(await AsyncStorage.getItem('notifications')) || [];
+      const storedNotifications = JSON.parse(await AsyncStorage.getItem(`notifications_${firebaseUser.uid}`)) || [];
       setNotifications(storedNotifications);
       console.log('Notifications loaded:', storedNotifications);
     } catch (error) {
@@ -31,7 +33,7 @@ export default function NotificationScreen() {
       );
       console.log('Deleted notifications:', updatedNotifications);
       setNotifications(updatedNotifications);
-      await AsyncStorage.setItem('notifications', JSON.stringify(updatedNotifications)); // Save updated list to AsyncStorage
+      await AsyncStorage.setItem(`notifications_${firebaseUser.uid}`, JSON.stringify(updatedNotifications)); // Save updated list to AsyncStorage
       console.log('Notifications after deletion:', notifications);
       loadNotifications();
     } catch (error) {
@@ -41,7 +43,7 @@ export default function NotificationScreen() {
 
   const deleteAllNotifications = async () => {
     try {
-      await AsyncStorage.removeItem('notifications');
+      await AsyncStorage.removeItem(`notifications_${firebaseUser.uid}`);
       setNotifications([]);
       console.log('All notifications deleted');
     } catch (error) {

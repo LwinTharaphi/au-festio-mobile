@@ -1,6 +1,3 @@
-// import 'core-js/stable'
-// import 'regenerator-runtime/runtime'
-// import 'whatwg-fetch'
 import React, { useEffect } from 'react';
 import "../global.css"
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -17,6 +14,7 @@ import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -109,6 +107,21 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const migrateNotifications = async () => {
+    const OLD_NOTIFICATIONS_KEY = 'user_notifications';
+    const NEW_NOTIFICATIONS_KEY = `notifications_${user?.uid}`;
+      try {
+        const oldNotifications = await AsyncStorage.getItem(OLD_NOTIFICATIONS_KEY);
+        if (oldNotifications) {
+          await AsyncStorage.setItem(NEW_NOTIFICATIONS_KEY, oldNotifications);
+          await AsyncStorage.removeItem(OLD_NOTIFICATIONS_KEY);
+          console.log('Notifications migrated to new key');
+        }
+      } catch (error) {
+        console.error('Error migrating notifications:', error);
+      }
+    };
+
     const prepareApp = async () => {
       SplashScreen.preventAutoHideAsync();
       await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate a 3s wait
@@ -119,32 +132,13 @@ export default function App() {
       // Clear all pending notifications
       await Notifications.cancelAllScheduledNotificationsAsync();
       await Notifications.dismissAllNotificationsAsync();
+
+      // Migrate notifications to the new key
+      await migrateNotifications();
     }
     prepareApp();
     registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
     registerBackgroundFetch();
-
-    // notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-    //   console.log('Notification received:', notification);
-    //   setNotification(notification);
-    // });
-
-    // responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-    //   console.log("Notification response received: ", response);
-    //   const { action } = response.notification.request.content.data;
-    //   if (action === 'reload') {
-    //     console.log("Reload action triggered");
-    //   }
-    // });
-    // return () => {
-    //   if (notificationListener.current) {
-    //     Notifications.removeNotificationSubscription(notificationListener.current);
-    //   }
-
-    //   if (responseListener.current) {
-    //     Notifications.removeNotificationSubscription(responseListener.current);
-    //   }
-    // }
   }, [appReloaded]);
 
   useEffect(() => {
@@ -170,13 +164,13 @@ export default function App() {
   useEffect(() => {
     const storeNotification = async (notification) => {
       try {
-        const storedNotifications = await AsyncStorage.getItem('notifications');
+        const storedNotifications = await AsyncStorage.getItem(`notifications_${user?.uid}`);
         const notifications = storedNotifications ? JSON.parse(storedNotifications) : [];
   
         // Add the new notification to the beginning of the array
         notifications.unshift(notification);
   
-        await AsyncStorage.setItem('notifications', JSON.stringify(notifications));
+        await AsyncStorage.setItem(`notifications_${user?.uid}`, JSON.stringify(notifications));
       } catch (error) {
         console.error('Error storing notification:', error);
       }
